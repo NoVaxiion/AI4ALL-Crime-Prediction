@@ -44,11 +44,12 @@ To achieve the project goals, the team:
 ---
 
 ## 🛠️ Technologies Used
-- **Python**
-- **pandas**, **NumPy**, **scikit-learn**, **LightGBM**, **Deep Neural Network**, **Random Forest**, **TensorFlow/Keras**
-- **Streamlit**
-- **Matplotlib**, **Plotly**, **Seaborn**
-- **Imbalanced-learn (SMOTE)**
+**Languages:** Python  
+**Libraries & Frameworks:** pandas, NumPy, scikit-learn, LightGBM, TensorFlow/Keras  
+**Models:** Deep Neural Network (DNN), Random Forest  
+**Visualization:** Streamlit, Matplotlib, Plotly, Seaborn  
+**Techniques:** SMOTE (imbalanced-learn)
+
 
 ---
 
