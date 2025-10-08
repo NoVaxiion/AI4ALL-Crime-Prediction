@@ -53,6 +53,13 @@ To achieve the project goals, the team:
 
 ---
 
+## Video Demo
+
+
+https://github.com/user-attachments/assets/bf8339d1-bf20-49ce-89ba-6f06cf236e91
+
+
+
 ## 👥 Authors
 This project was developed collaboratively under the **AI4ALL Ignite Fellowship**:
 
