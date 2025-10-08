@@ -1,6 +1,7 @@
 # 🔍 CT-Crimes — AI4ALL Crime Prediction Project
 
 **CT-Crimes** is a collaborative machine learning project developed during the **AI4ALL Fellowship** by **Kenneth Maeda, Manushri Pendekanti, and Min Thaw Zin**.  
+
 The project explores how artificial intelligence can be applied to predict and analyze reported crimes across Connecticut using real-world, publicly available data.
 
 Using datasets from the **FBI Crime Data Explorer** and the **Connecticut Open Data Portal**, the team built a full end-to-end ML pipeline for data ingestion, preprocessing, model training, evaluation, and deployment.  
