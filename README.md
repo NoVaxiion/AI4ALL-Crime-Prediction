@@ -34,3 +34,6 @@ Developed under the **AI4ALL Fellowship** to promote ethical, interpretable, and
 ---
 
 ### 🎥 Video Demo
+
+https://github.com/user-attachments/assets/132947e0-ced5-4664-b481-c7b91649bd0a
+
