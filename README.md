@@ -40,8 +40,7 @@ To achieve the project goals, the team:
 ---
 
 ## 🧠 Data Sources
-- [FBI Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads)  
-- Crime Incident-Based Data by State (Connecticut 2021 - 2023)
+- [FBI Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads): Crime Incident-Based Data by State (Connecticut 2021 - 2023)
 ---
 
 ## 🛠️ Technologies Used
