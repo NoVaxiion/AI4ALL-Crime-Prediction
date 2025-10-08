@@ -5,6 +5,7 @@ The project explores how artificial intelligence can be applied to predict and a
 
 Using datasets from the **FBI Crime Data Explorer** and the **Connecticut Open Data Portal**, the team built a full end-to-end ML pipeline for data ingestion, preprocessing, model training, evaluation, and deployment.  
 Models include **LightGBM**, **Random Forest**, and a custom **Deep Neural Network (DNN)** integrating spatial, temporal, and environmental features.  
+
 Class imbalance is handled through **SMOTE**, and interpretability tools visualize feature influence and regional crime patterns.
 
 The project also includes a **Streamlit dashboard** for interactive predictions and data exploration, enabling users to visualize trends and understand model outputs in real time.
