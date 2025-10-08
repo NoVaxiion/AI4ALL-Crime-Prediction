@@ -1,18 +1,21 @@
 # 🔍 CT-Crimes — AI4ALL Ignite Crime Prediction Project
 
 **CT-Crimes** is a collaborative machine learning project developed during the **AI4ALL Ignite Fellowship** by **Kenneth Maeda**, **Manushri Pendekanti**, and **Min Thaw Zin**.  
+
 The project investigates how artificial intelligence can be leveraged to predict and analyze reported crimes across Connecticut using real-world, publicly available data.
 
 ---
 
 ## 🎯 Purpose & Outcomes
 Uncovered meaningful spatial and temporal crime patterns by engineering a full end-to-end ML pipeline for Connecticut’s public safety data.  
+
 Applied data preprocessing, model optimization, and interpretability techniques to build an ethical, explainable AI system aligned with **AI4ALL Ignite’s mission** of advancing AI for social good.
 
 ---
 
 ## 🧩 Problem Statement
 Crime remains a critical social issue impacting safety, resource allocation, and policy decisions. Yet, predictive tools for localized crime analysis are often inaccessible or limited.  
+
 **CT-Crimes** addresses this gap by building an interpretable model that forecasts regional crime trends—empowering communities and decision-makers with insights for proactive safety measures and data-driven interventions.
 
 ---
@@ -23,7 +26,6 @@ Crime remains a critical social issue impacting safety, resource allocation, and
 - Trained multiple models: **LightGBM**, **Random Forest**, and a **custom Deep Neural Network (DNN)**
 - Implemented **SMOTE** to mitigate severe class imbalance
 - Built an **interactive Streamlit dashboard** for real-time visualization and predictions
-- Achieved interpretable outputs through feature importance and regional heatmaps
 
 ---
 
@@ -38,17 +40,16 @@ To achieve the project goals, the team:
 ---
 
 ## 🧠 Data Sources
-- [FBI Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home)  
-- [Connecticut Open Data Portal](https://data.ct.gov/)
+- [FBI Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads)  
 
 ---
 
 ## 🛠️ Technologies Used
 - **Python**
-- **pandas**, **NumPy**, **scikit-learn**, **LightGBM**, **TensorFlow/Keras**
+- **pandas**, **NumPy**, **scikit-learn**, **LightGBM**, **Deep Neural Network**, **Random Forest**, **TensorFlow/Keras**
 - **Streamlit**
 - **Matplotlib**, **Plotly**, **Seaborn**
-- **imbalanced-learn (SMOTE)**
+- **Imbalanced-learn (SMOTE)**
 
 ---
 
