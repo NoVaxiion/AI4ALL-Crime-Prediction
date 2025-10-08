@@ -41,7 +41,7 @@ To achieve the project goals, the team:
 
 ## 🧠 Data Sources
 - [FBI Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads)  
-
+- Crime Incident-Based Data by State (Connecticut 2021 - 2023)
 ---
 
 ## 🛠️ Technologies Used
@@ -63,9 +63,9 @@ https://github.com/user-attachments/assets/bf8339d1-bf20-49ce-89ba-6f06cf236e91
 ## 👥 Authors
 This project was developed collaboratively under the **AI4ALL Ignite Fellowship**:
 
-- **Kenneth Maeda** — [GitHub](https://github.com/NoVaxiion) | Backend, Model Integration, Visualization  
-- **Manushri Pendekanti** — Data Engineering, Feature Analysis  
-- **Min Thaw Zin** — Model Development, Evaluation  
+- **Kenneth Maeda** — [GitHub](https://github.com/NoVaxiion) 
+- **Manushri Pendekanti**   
+- **Min Thaw Zin**   
 
 ---
 
