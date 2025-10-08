@@ -1,39 +1,65 @@
-# 🔍 CT-Crimes — AI4ALL Crime Prediction Project
+# 🔍 CT-Crimes — AI4ALL Ignite Crime Prediction Project
 
-**CT-Crimes** is a collaborative machine learning project developed during the **AI4ALL Fellowship** by **Kenneth Maeda, Manushri Pendekanti, and Min Thaw Zin**.  
-
-The project explores how artificial intelligence can be applied to predict and analyze reported crimes across Connecticut using real-world, publicly available data.
-
-Using datasets from the **FBI Crime Data Explorer** and the **Connecticut Open Data Portal**, the team built a full end-to-end ML pipeline for data ingestion, preprocessing, model training, evaluation, and deployment.  
-Models include **LightGBM**, **Random Forest**, and a custom **Deep Neural Network (DNN)** integrating spatial, temporal, and environmental features.  
-
-Class imbalance is handled through **SMOTE**, and interpretability tools visualize feature influence and regional crime patterns.
-
-The project also includes a **Streamlit dashboard** for interactive predictions and data exploration, enabling users to visualize trends and understand model outputs in real time.
+**CT-Crimes** is a collaborative machine learning project developed during the **AI4ALL Ignite Fellowship** by **Kenneth Maeda**, **Manushri Pendekanti**, and **Min Thaw Zin**.  
+The project investigates how artificial intelligence can be leveraged to predict and analyze reported crimes across Connecticut using real-world, publicly available data.
 
 ---
 
-### 💡 Key Features
-- Multi-model architecture (LightGBM, Random Forest, DNN)  
-- Spatial, temporal, and environmental feature integration  
-- SMOTE for class balancing  
-- Interactive Streamlit visualization and inference dashboard  
-- Reproducible configuration and modular design  
+## 🎯 Purpose & Outcomes
+Uncovered meaningful spatial and temporal crime patterns by engineering a full end-to-end ML pipeline for Connecticut’s public safety data.  
+Applied data preprocessing, model optimization, and interpretability techniques to build an ethical, explainable AI system aligned with **AI4ALL Ignite’s mission** of advancing AI for social good.
 
 ---
 
-### ⚙️ Status
-The project is under **active development**, with ongoing bug fixes and performance improvements planned to enhance model stability and dashboard reliability.
+## 🧩 Problem Statement
+Crime remains a critical social issue impacting safety, resource allocation, and policy decisions. Yet, predictive tools for localized crime analysis are often inaccessible or limited.  
+**CT-Crimes** addresses this gap by building an interpretable model that forecasts regional crime trends—empowering communities and decision-makers with insights for proactive safety measures and data-driven interventions.
 
 ---
 
-### ⚖️ Educational Use
-For **educational and research purposes only.**  
-Developed under the **AI4ALL Fellowship** to promote ethical, interpretable, and community-centered AI for public data analysis.
+## 📊 Key Results
+- Processed and integrated **360K+ records** from the **FBI Crime Data Explorer** and **Connecticut Open Data Portal**
+- Engineered **spatial**, **temporal**, and **environmental** feature sets to improve predictive accuracy
+- Trained multiple models: **LightGBM**, **Random Forest**, and a **custom Deep Neural Network (DNN)**
+- Implemented **SMOTE** to mitigate severe class imbalance
+- Built an **interactive Streamlit dashboard** for real-time visualization and predictions
+- Achieved interpretable outputs through feature importance and regional heatmaps
 
 ---
 
-### 🎥 Video Demo
+## ⚙️ Methodologies
+To achieve the project goals, the team:
+- Designed and executed an **end-to-end data pipeline** for ingestion, cleaning, and transformation  
+- Implemented **multi-model training and evaluation** using cross-validation and hyperparameter tuning  
+- Applied **Synthetic Minority Oversampling Technique (SMOTE)** for balanced learning  
+- Developed a **Streamlit dashboard** for inference, visualization, and user interactivity  
+- Leveraged **Explainable AI (XAI)** methods to visualize feature influence and model transparency  
 
-https://github.com/user-attachments/assets/132947e0-ced5-4664-b481-c7b91649bd0a
+---
 
+## 🧠 Data Sources
+- [FBI Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home)  
+- [Connecticut Open Data Portal](https://data.ct.gov/)
+
+---
+
+## 🛠️ Technologies Used
+- **Python**
+- **pandas**, **NumPy**, **scikit-learn**, **LightGBM**, **TensorFlow/Keras**
+- **Streamlit**
+- **Matplotlib**, **Plotly**, **Seaborn**
+- **imbalanced-learn (SMOTE)**
+
+---
+
+## 👥 Authors
+This project was developed collaboratively under the **AI4ALL Ignite Fellowship**:
+
+- **Kenneth Maeda** — [GitHub](https://github.com/NoVaxiion) | Backend, Model Integration, Visualization  
+- **Manushri Pendekanti** — Data Engineering, Feature Analysis  
+- **Min Thaw Zin** — Model Development, Evaluation  
+
+---
+
+## ⚖️ Educational Use
+Developed for educational and research purposes as part of the **AI4ALL Ignite Fellowship**, promoting **ethical, interpretable, and community-centered AI** in public data analysis.
