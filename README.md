@@ -58,14 +58,26 @@ To achieve the project goals, the team:
 
 https://github.com/user-attachments/assets/bf8339d1-bf20-49ce-89ba-6f06cf236e91
 
+---
 
+## 🎓 Learning Outcomes
+Through this project, we gained valuable technical and research experience across the full machine learning lifecycle — from data acquisition to deployment and bias evaluation. Key takeaways include:
+
+* **End-to-End ML Development:** Learned how to design, train, and evaluate machine learning models (LightGBM, Random Forest, DNNs) on large-scale structured datasets.  
+* **Data Ethics & Bias Analysis:** Understood the ethical implications of AI in law enforcement, identifying and mitigating sources of data bias through comparative evaluation and fairness metrics.  
+* **Feature Engineering & Model Optimization:** Practiced transforming raw data into meaningful features, tuning hyperparameters, and balancing model complexity with interpretability.  
+* **Data Visualization & Communication:** Strengthened skills in presenting technical findings clearly to both technical and non-technical audiences using visual analytics and dashboards.  
+* **Collaborative Research:** Worked within the **AI4ALL Ignite** mentorship framework, collaborating with peers and mentors to conduct research aligned with real-world AI for social good principles.  
+* **Practical AI Deployment:** Built an interactive **Streamlit app** for real-time prediction and visualization — bridging the gap between data science prototypes and accessible public tools.  
+
+> These experiences reinforced our belief that **responsible AI is not just about accuracy, but about accountability, transparency, and impact**.
 
 ## 👥 Authors
 This project was developed collaboratively under the **AI4ALL Ignite Fellowship**:
 
 - **Kenneth Maeda** — [GitHub](https://github.com/NoVaxiion) 
 - **Manushri Pendekanti**   
-- **Min Thaw Zin**   
+- **Min Thaw Zin** - [GitHub](https://github.com/Min-13)
 
 ---
 
