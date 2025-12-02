@@ -1,52 +1,54 @@
 # 🔍 CT-Crimes — AI4ALL Ignite Crime Prediction Project
 
-**CT-Crimes** is a collaborative machine learning project developed during the **AI4ALL Ignite Fellowship** by **Kenneth Maeda**, **Manushri Pendekanti**, and **Min Thaw Zin**.  
-
-The project investigates how artificial intelligence can be leveraged to predict and analyze reported crimes across Connecticut using real-world, publicly available data.
+**CT-Crimes**: AI-Driven Crime Prediction & Analysis
+CT-Crimes is a machine learning initiative investigating how artificial intelligence can predict and analyze reported crime trends across Connecticut. Developed during the AI4ALL Ignite Fellowship by Kenneth Maeda, Manushri Pendekanti, and Min Thaw Zin, this project leverages real-world, publicly available data to build an ethical, explainable AI system aligned with the mission of advancing AI for social good.
 
 ---
 
 ## 🎯 Purpose & Outcomes
-Uncovered meaningful spatial and temporal crime patterns by engineering a full end-to-end ML pipeline for Connecticut’s public safety data.  
+Our goal was to uncover meaningful spatial and temporal crime patterns by engineering a robust, end-to-end machine learning pipeline for public safety data. We applied rigorous data preprocessing, advanced model optimization, and interpretability techniques to create a tool that empowers communities and decision-makers with actionable insights for proactive safety measures and data-driven interventions.
 
 Applied data preprocessing, model optimization, and interpretability techniques to build an ethical, explainable AI system aligned with **AI4ALL Ignite’s mission** of advancing AI for social good.
 
 ---
 
 ## 🧩 Problem Statement
-Crime remains a critical social issue impacting safety, resource allocation, and policy decisions. Yet, predictive tools for localized crime analysis are often inaccessible or limited.  
-
-**CT-Crimes** addresses this gap by building an interpretable model that forecasts regional crime trends—empowering communities and decision-makers with insights for proactive safety measures and data-driven interventions.
+Crime is a complex social issue affecting safety, resource allocation, and policy. However, predictive tools for localized crime analysis are often inaccessible, opaque, or limited in scope. CT-Crimes bridges this gap by building an accessible, interpretable model that forecasts regional crime trends, fostering accountability and informed decision-making.
 
 ---
 
 ## 📊 Key Results
-- Processed and integrated **360K+ records** from the **FBI Crime Data Explorer** and **Connecticut Open Data Portal**
-- Engineered **spatial**, **temporal**, and **environmental** feature sets to improve predictive accuracy
-- Trained multiple models: **LightGBM**, **Random Forest**, and a **custom Deep Neural Network (DNN)**
-- Implemented **SMOTE** to mitigate severe class imbalance
-- Built an **interactive Streamlit dashboard** for real-time visualization and predictions
-
+- Dual-Model Architecture: Designed a system comprising two distinct LightGBM models:
+  - Volume Forecaster (Regression): Predicts the count of daily incidents.
+  - Risk Classifier (Multi-class): Predicts the type of crime most likely to occur given specific spatial/temporal contexts.
+- Recursive Time-Series Forecasting: Implemented a "blind" recursive forecasting loop for the volume model to prevent data leakage, ensuring that future predictions rely only on past predictions rather than actual future data.
+- Data Integration & Engineering: Unified over 497,000 records from 2021–2024, merging disparate datasets to calculate normalized metrics like crime rates per 1,000 residents and officer-to-population ratios.
+- Resource Analytics Module: Engineered specific logic to track and visualize police force demographics, providing a granular breakdown of officer counts by gender across 95+ municipalities.
+- Interactive Streamlit Dashboard: Deployed a fully interactive interface featuring:
+  - Volume Forecasting: 30-day trend lines with holiday indicators.
+  - Risk Analysis: Dynamic comparison of predicted crime probabilities vs. historical crime distributions (Pie vs. Bar charts).
+  - Officer Trends: Toggleable views for statewide vs. city-specific force analysis with stacked demographic visualization.
+    
 ---
 
 ## ⚙️ Methodologies
-To achieve the project goals, the team:
-- Designed and executed an **end-to-end data pipeline** for ingestion, cleaning, and transformation  
-- Implemented **multi-model training and evaluation** using cross-validation and hyperparameter tuning  
-- Applied **Synthetic Minority Oversampling Technique (SMOTE)** for balanced learning  
-- Developed a **Streamlit dashboard** for inference, visualization, and user interactivity  
-- Leveraged **Explainable AI (XAI)** methods to visualize feature influence and model transparency  
+To achieve our goals, the team executed a comprehensive workflow:
+
+- Pipeline Design: Created an end-to-end pipeline for data ingestion, cleaning, and transformation, specifically handling the propagation of 2024 officer statistics across historical records for consistent resource analysis.
+- Feature Engineering: Developed "lag" features (past crime counts), rolling averages, and calendar-based attributes (holidays, day of week) to capture temporal dependencies.
+- Bias Mitigation: Applied SMOTE (Synthetic Minority Oversampling Technique) to effectively mitigate severe class imbalances in crime type data.
+= Model Evaluation: Conducted rigorous "Global Blind Backtests" to validate the volume forecaster's performance on unseen data, achieving a global volume accuracy of ~76%.
 
 ---
 
 ## 🧠 Data Sources
-- [FBI Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads): Crime Incident-Based Data by State (Connecticut 2021 - 2023)
+- [FBI Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads): Crime Incident-Based Data by State (Connecticut 2021 - 2024)
 ---
 
 ## 🛠️ Technologies Used
 **Languages:** Python  
-**Libraries & Frameworks:** pandas, NumPy, scikit-learn, LightGBM, TensorFlow/Keras  
-**Models:** Deep Neural Network (DNN), Random Forest  
+**Libraries & Frameworks:** pandas, NumPy, scikit-learn, TensorFlow/Keras  
+**Models:** Deep Neural Network (DNN), Random Forest, LightGBM, Logistic Regression
 **Visualization:** Streamlit, Matplotlib, Plotly, Seaborn  
 **Techniques:** SMOTE (imbalanced-learn)
 
