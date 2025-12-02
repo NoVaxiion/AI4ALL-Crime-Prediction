@@ -1,5 +1,7 @@
+# This specific file was created by Ai as I am not great at frontend. 
+
 import os
-# 1. FORCE CPU MODE
+# 1. Force GPU mode for Mac Book
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import streamlit as st
