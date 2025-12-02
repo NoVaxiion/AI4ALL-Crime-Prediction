@@ -1,6 +1,16 @@
 # Hosted app: **[ProjeCT 360 on Streamlit](https://ai4all-crime-prediction-aiupyyt2azfwf4rhp7tuem.streamlit.app/)**  
 
 
+## Video Demo
+
+
+
+https://github.com/user-attachments/assets/8bc9d641-bd9a-4302-8397-f8d309ef6046
+
+
+
+
+---
 
 
 # 🔍 CT-Crimes — AI4ALL Ignite Crime Prediction Project
@@ -64,17 +74,6 @@ To achieve our goals, the team executed a comprehensive workflow:
 
 **Visualization:** Streamlit, Matplotlib, Plotly, Seaborn  
 **Techniques:** SMOTE (imbalanced-learn)
-
-
----
-
-## Video Demo
-
-
-
-https://github.com/user-attachments/assets/8bc9d641-bd9a-4302-8397-f8d309ef6046
-
-
 
 
 ---
