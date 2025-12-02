@@ -21,9 +21,13 @@ Crime is a complex social issue affecting safety, resource allocation, and polic
 - Dual-Model Architecture: Designed a system comprising two distinct LightGBM models:
   - Volume Forecaster (Regression): Predicts the count of daily incidents.
   - Risk Classifier (Multi-class): Predicts the type of crime most likely to occur given specific spatial/temporal contexts.
+
 - Recursive Time-Series Forecasting: Implemented a "blind" recursive forecasting loop for the volume model to prevent data leakage, ensuring that future predictions rely only on past predictions rather than actual future data.
+
 - Data Integration & Engineering: Unified over 497,000 records from 2021–2024, merging disparate datasets to calculate normalized metrics like crime rates per 1,000 residents and officer-to-population ratios.
+
 - Resource Analytics Module: Engineered specific logic to track and visualize police force demographics, providing a granular breakdown of officer counts by gender across 95+ municipalities.
+
 - Interactive Streamlit Dashboard: Deployed a fully interactive interface featuring:
   - Volume Forecasting: 30-day trend lines with holiday indicators.
   - Risk Analysis: Dynamic comparison of predicted crime probabilities vs. historical crime distributions (Pie vs. Bar charts).
@@ -35,9 +39,12 @@ Crime is a complex social issue affecting safety, resource allocation, and polic
 To achieve our goals, the team executed a comprehensive workflow:
 
 - Pipeline Design: Created an end-to-end pipeline for data ingestion, cleaning, and transformation, specifically handling the propagation of 2024 officer statistics across historical records for consistent resource analysis.
+  
 - Feature Engineering: Developed "lag" features (past crime counts), rolling averages, and calendar-based attributes (holidays, day of week) to capture temporal dependencies.
+  
 - Bias Mitigation: Applied SMOTE (Synthetic Minority Oversampling Technique) to effectively mitigate severe class imbalances in crime type data.
-= Model Evaluation: Conducted rigorous "Global Blind Backtests" to validate the volume forecaster's performance on unseen data, achieving a global volume accuracy of ~76%.
+
+- Model Evaluation: Conducted rigorous "Global Blind Backtests" to validate the volume forecaster's performance on unseen data, achieving a global volume accuracy of ~76%.
 
 ---
 
@@ -59,7 +66,11 @@ To achieve our goals, the team executed a comprehensive workflow:
 ## Video Demo
 
 
-https://github.com/user-attachments/assets/bf8339d1-bf20-49ce-89ba-6f06cf236e91
+
+https://github.com/user-attachments/assets/8bc9d641-bd9a-4302-8397-f8d309ef6046
+
+
+
 
 ---
 
