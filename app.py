@@ -155,7 +155,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown(f"**📍 {selected_city} Stats**")
 st.sidebar.metric("👮 Officers", int(stats_row['total_officers']))
 st.sidebar.metric("👥 Population", f"{int(stats_row['population']):,}")
-st.sidebar.caption(f"Officer Rate: {stats_row['officers_per_1000_people']} per 1k")
+st.sidebar.caption(f"Officer Rate: {stats_row['officers_per_1000_people']} per 1,000 People")
 
 # --- ABOUT SECTION ---
 with st.sidebar.expander("ℹ️ About PrediCT 360"):
@@ -182,7 +182,7 @@ with st.sidebar.expander("ℹ️ About PrediCT 360"):
     """)
 
 # --- TABS ---
-tab1, tab2, tab3 = st.tabs(["📈 Volume Forecast", "🔍 Risk Analysis", "👮 Officer Trends"])
+tab1, tab2, tab3 = st.tabs(["📈 Volume Forecast (In Beta)", "🔍 Risk Analysis", "👮 Officer Trends"])
 
 # TAB 1: VOLUME
 with tab1:
