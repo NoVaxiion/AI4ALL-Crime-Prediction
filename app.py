@@ -155,7 +155,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown(f"**📍 {selected_city} Stats**")
 st.sidebar.metric("👮 Officers", int(stats_row['total_officers']))
 st.sidebar.metric("👥 Population", f"{int(stats_row['population']):,}")
-st.sidebar.caption(f"Officer Rate: {stats_row['officers_per_1000_people']} per 1,000 People")
+st.sidebar.caption(f"Officer Rate: {stats_row['officers_per_1000_people']} Officer(s) per 1,000 People")
 
 # --- ABOUT SECTION ---
 with st.sidebar.expander("ℹ️ About PrediCT 360"):
