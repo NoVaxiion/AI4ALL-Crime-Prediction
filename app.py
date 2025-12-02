@@ -184,34 +184,35 @@ with st.sidebar.expander("ℹ️ About PrediCT 360"):
 # --- TABS ---
 tab1, tab2, tab3 = st.tabs(["📈 Volume Forecast (In Beta)", "🔍 Risk Analysis", "👮 Officer Trends"])
 
-# TAB 1: VOLUME
+# TAB 1: VOLUME (Automatic Update)
 with tab1:
     st.subheader(f"30-Day Volume Forecast: {selected_city}")
     
-    if st.button("Generate Forecast", key="btn_vol_forecast"):
-        with st.spinner("Calculating..."):
-            res = run_forecast_loop(selected_city)
-        if res is not None:
-            fig = px.line(res, x='Date', y='Predicted Count', markers=True)
-            fig.update_layout(
-                title="Predicted Daily Incidents (30-Day Trend)",
-                xaxis_title="Date",
-                yaxis_title="Incident Count"
-            )
-            fig.update_traces(line_color='#FF4B4B', line_width=3)
-            
-            hol_days = res[res['is_holiday'] == 1]
-            if not hol_days.empty:
-                 fig.add_trace(go.Scatter(
-                    x=hol_days['Date'], y=hol_days['Predicted Count'],
-                    mode='markers', name='Holiday',
-                    marker=dict(color='gold', size=15, symbol='star', line=dict(color='black', width=1))
-                ))
-            
-            st.plotly_chart(fig, use_container_width=True)
-            st.metric("Total Predicted (30 Days)", f"{int(res['Predicted Count'].sum())} Crimes")
-        else:
-            st.error("Insufficient data.")
+    # AUTOMATIC EXECUTION (No Button)
+    with st.spinner("Calculating forecast..."):
+        res = run_forecast_loop(selected_city)
+        
+    if res is not None:
+        fig = px.line(res, x='Date', y='Predicted Count', markers=True)
+        fig.update_layout(
+            title="Predicted Daily Incidents (30-Day Trend)",
+            xaxis_title="Date",
+            yaxis_title="Incident Count"
+        )
+        fig.update_traces(line_color='#FF4B4B', line_width=3)
+        
+        hol_days = res[res['is_holiday'] == 1]
+        if not hol_days.empty:
+             fig.add_trace(go.Scatter(
+                x=hol_days['Date'], y=hol_days['Predicted Count'],
+                mode='markers', name='Holiday',
+                marker=dict(color='gold', size=15, symbol='star', line=dict(color='black', width=1))
+            ))
+        
+        st.plotly_chart(fig, use_container_width=True)
+        st.metric("Total Predicted (30 Days)", f"{int(res['Predicted Count'].sum())} Crimes")
+    else:
+        st.error("Insufficient data.")
 
 # TAB 2: RISK TYPE (Updated Layout - Stacked)
 with tab2:
