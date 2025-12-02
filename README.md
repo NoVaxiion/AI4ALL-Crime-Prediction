@@ -1,4 +1,4 @@
-# Streamlit Link: [ProjeCT 360] (https://ai4all-crime-prediction-aiupyyt2azfwf4rhp7tuem.streamlit.app/)
+Hosted app: **[ProjeCT 360 on Streamlit](https://ai4all-crime-prediction-aiupyyt2azfwf4rhp7tuem.streamlit.app/)**  
 
 # 🔍 CT-Crimes — AI4ALL Ignite Crime Prediction Project
 
