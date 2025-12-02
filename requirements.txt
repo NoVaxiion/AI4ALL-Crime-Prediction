@@ -1,0 +1,8 @@
+streamlit
+pandas
+numpy
+lightgbm
+plotly
+holidays
+joblib
+scikit-learn
