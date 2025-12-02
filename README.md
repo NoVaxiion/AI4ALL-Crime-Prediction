@@ -49,6 +49,7 @@ To achieve our goals, the team executed a comprehensive workflow:
 **Languages:** Python  
 **Libraries & Frameworks:** pandas, NumPy, scikit-learn, TensorFlow/Keras  
 **Models:** Deep Neural Network (DNN), Random Forest, LightGBM, Logistic Regression
+
 **Visualization:** Streamlit, Matplotlib, Plotly, Seaborn  
 **Techniques:** SMOTE (imbalanced-learn)
 
