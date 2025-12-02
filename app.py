@@ -13,7 +13,7 @@ import joblib
 from datetime import datetime, timedelta
 
 # --- APP CONFIGURATION ---
-st.set_page_config(page_title="CT Crime Insight 360", page_icon="🚓", layout="wide")
+st.set_page_config(page_title="CT Crime ProjeCT 360", page_icon="🚓", layout="wide")
 st.title("🚓 ProjeCT 360")
 st.markdown("### Crime, Population & Officer Awareness")
 
