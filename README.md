@@ -95,7 +95,7 @@ Through this project, we gained valuable technical and research experience acros
 This project was developed collaboratively under the **AI4ALL Ignite Fellowship**:
 
 - **Kenneth Maeda** — [GitHub](https://github.com/NoVaxiion) 
-- **Manushri Pendekanti** GitHub](https://github.com/manushrip06)
+- **Manushri Pendekanti** — [GitHub](https://github.com/manushrip06)
 - **Min Thaw Zin** - [GitHub](https://github.com/Min-13)
 
 ---
