@@ -1,3 +1,5 @@
+# Streamlit Link: https://ai4all-crime-prediction-aiupyyt2azfwf4rhp7tuem.streamlit.app/
+
 # 🔍 CT-Crimes — AI4ALL Ignite Crime Prediction Project
 
 **CT-Crimes**: AI-Driven Crime Prediction & Analysis
