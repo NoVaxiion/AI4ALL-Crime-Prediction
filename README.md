@@ -1,14 +1,6 @@
 # Hosted app: **[ProjeCT 360 on Streamlit](https://ai4all-crime-prediction-aiupyyt2azfwf4rhp7tuem.streamlit.app/)**  
 
 
-## Video Demo
-
-
-
-https://github.com/user-attachments/assets/8bc9d641-bd9a-4302-8397-f8d309ef6046
-
-
-
 
 ---
 
@@ -60,6 +52,17 @@ To achieve our goals, the team executed a comprehensive workflow:
 - Bias Mitigation: Applied SMOTE (Synthetic Minority Oversampling Technique) to effectively mitigate severe class imbalances in crime type data.
 
 - Model Evaluation: Conducted rigorous "Global Blind Backtests" to validate the volume forecaster's performance on unseen data, achieving a global volume accuracy of ~76%.
+
+---
+
+## Video Demo
+
+
+
+https://github.com/user-attachments/assets/8bc9d641-bd9a-4302-8397-f8d309ef6046
+
+
+
 
 ---
 
