@@ -1,0 +1,7 @@
+.venv
+.vscode
+*evaluate_models.py.DS_Store
+*__pycache__/
+*.pyc
+.DS_Store
+backtest_outputs/
