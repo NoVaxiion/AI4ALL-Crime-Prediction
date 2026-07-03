@@ -2,6 +2,7 @@ import os
 import pickle
 import logging
 import traceback
+from html import escape
 from datetime import datetime, timedelta
 
 # 1. FORCE CPU MODE
@@ -39,6 +40,19 @@ def report_tab_error(context, exc):
     st.error(f"{context} failed: {type(exc).__name__}: {exc}")
     with st.expander("Technical details"):
         st.code(traceback.format_exc())
+
+
+def render_risk_summary_card(label, value, probability):
+    st.markdown(
+        f"""
+        <div class="risk-summary-card">
+            <div class="risk-summary-label">{escape(str(label))}</div>
+            <div class="risk-summary-value">{escape(str(value))}</div>
+            <div class="risk-summary-probability">↑ {probability:.2%}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def apply_theme(theme_mode):
@@ -112,6 +126,41 @@ def apply_theme(theme_mode):
         div[data-testid="stMetric"] [data-testid="stMetricValue"],
         div[data-testid="stMetric"] [data-testid="stMetricDelta"] {{
             color: {colors["text"]};
+        }}
+        .risk-summary-card {{
+            background-color: {colors["secondary"]};
+            border: 1px solid {colors["border"]};
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 9rem;
+        }}
+        .risk-summary-label {{
+            color: {colors["text"]};
+            font-size: 1rem;
+            line-height: 1.2;
+            margin-bottom: 0.75rem;
+        }}
+        .risk-summary-value {{
+            color: {colors["text"]};
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.1;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }}
+        .risk-summary-probability {{
+            display: inline-block;
+            background-color: rgba(187, 247, 208, 0.8);
+            color: #052E16;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            margin-top: 0.75rem;
+            padding: 0.25rem 0.55rem;
+        }}
+        @media (max-width: 900px) {{
+            .risk-summary-value {{
+                font-size: 1.6rem;
+            }}
         }}
         div[data-baseweb="select"] > div,
         div[data-baseweb="base-input"] input {{
@@ -534,9 +583,10 @@ with tab2:
             "Location Type",
             lookups['loc_type_cats'],
             index=default_loc_type_idx,
-            key="risk_loc_type_select",
+            key=f"risk_loc_type_select_{s_loc}",
             format_func=lambda loc_type: str(loc_type).capitalize(),
         )
+        st.caption(f"Inferred from selected location: {inferred_location_type.capitalize()}")
         compare_risk_cities = False
         if len(comparison_cities) > 1:
             compare_risk_cities = st.checkbox(
@@ -595,11 +645,19 @@ with tab2:
             - **Time:** {s_date.strftime('%Y-%m-%d')} @ {s_time}:00
             - **Primary Model:** {primary_risk_result['model_source']}
             """)
-            m1, m2 = st.columns(2)
-            with m1:
-                st.metric("Broad Category", primary_risk_result['broad_label'], f"{primary_risk_result['broad_probability']:.2%}")
-            with m2:
-                st.metric("Top Specific", primary_risk_result['specific_label'], f"{primary_risk_result['specific_probability']:.2%}")
+            card_cols = st.columns(2)
+            with card_cols[0]:
+                render_risk_summary_card(
+                    "Broad Category",
+                    primary_risk_result['broad_label'],
+                    primary_risk_result['broad_probability'],
+                )
+            with card_cols[1]:
+                render_risk_summary_card(
+                    "Top Specific",
+                    primary_risk_result['specific_label'],
+                    primary_risk_result['specific_probability'],
+                )
 
         st.divider()
         chart_cols = st.columns(2)
