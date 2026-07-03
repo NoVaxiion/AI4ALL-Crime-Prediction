@@ -1,6 +1,0 @@
-Models/combined_data. filter=lfs diff=lfs merge=lfs -text
-Models/combined_data.csv filter=lfs diff=lfs merge=lfs -text
-Models/*.pkl filter=lfs diff=lfs merge=lfs -text
-Models/*.csv filter=lfs diff=lfs merge=lfs -text
-*.pkl filter=lfs diff=lfs merge=lfs -text
-*.csv filter=lfs diff=lfs merge=lfs -text
