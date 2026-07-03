@@ -602,19 +602,14 @@ with tab2:
         s_time = st.slider("Hour", 0, 23, 12, key="risk_time_slider")
         s_loc = st.selectbox("Specific Location Area", locations, key="risk_loc_area_select")
         inferred_location_type = get_location_type(s_loc)
-        default_loc_type_idx = (
-            lookups['loc_type_cats'].index(inferred_location_type)
-            if inferred_location_type in lookups['loc_type_cats']
-            else 0
-        )
-        s_loc_type = st.selectbox(
+        s_loc_type = inferred_location_type
+        st.text_input(
             "Location Type",
-            lookups['loc_type_cats'],
-            index=default_loc_type_idx,
-            key=f"risk_loc_type_select_{s_loc}",
-            format_func=lambda loc_type: str(loc_type).capitalize(),
+            value=s_loc_type.capitalize(),
+            disabled=True,
+            key=f"risk_loc_type_display_{s_loc}",
         )
-        st.caption(f"Inferred from selected location: {inferred_location_type.capitalize()}")
+        st.caption("Location type is inferred from the selected specific location.")
         compare_risk_cities = False
         if len(comparison_cities) > 1:
             compare_risk_cities = st.checkbox(
