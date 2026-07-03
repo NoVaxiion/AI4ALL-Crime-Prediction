@@ -50,6 +50,17 @@ def compute_blended_prediction(model_pred, analog_pred, recent_pred, seasonal_pr
     return max(0, blend + trend)
 
 
+def decode_model_class(label_encoder, model_classes, class_position):
+    """Decode a predict_proba column position using the estimator's class IDs."""
+    if len(model_classes) == 0:
+        return ''
+    class_id = model_classes[class_position]
+    try:
+        return label_encoder.inverse_transform([class_id])[0]
+    except (TypeError, ValueError):
+        return str(class_id)
+
+
 def prepare_forecast_history(city_profile, target_start_date):
     target_ts = pd.Timestamp(target_start_date)
     # Leakage guard: all historical blend components are computed only from real
@@ -261,6 +272,7 @@ def predict_crime_risk(
     broad_label_encoder = classifier_context['broad_label_encoder']
     broad_probs = broad_classifier.predict_proba(in_data)[0]
     broad_top_idx = int(np.argmax(broad_probs))
+    broad_model_classes = getattr(broad_classifier, 'classes_', np.arange(len(broad_probs)))
 
     per_city_classifiers = classifier_context['per_city_classifiers']
     city_specific_model = per_city_classifiers.get(city)
@@ -274,13 +286,16 @@ def predict_crime_risk(
     label_encoder = classifier_context['label_encoder']
     specific_probs = specific_model.predict_proba(in_data)[0]
     specific_top_idx = int(np.argmax(specific_probs))
+    specific_model_classes = getattr(specific_model, 'classes_', np.arange(len(specific_probs)))
 
     return {
         'broad_probs': broad_probs,
-        'broad_label': broad_label_encoder.inverse_transform([broad_top_idx])[0],
+        'broad_model_classes': broad_model_classes,
+        'broad_label': decode_model_class(broad_label_encoder, broad_model_classes, broad_top_idx),
         'broad_probability': float(broad_probs[broad_top_idx]),
         'specific_probs': specific_probs,
-        'specific_label': label_encoder.inverse_transform([specific_top_idx])[0],
+        'specific_model_classes': specific_model_classes,
+        'specific_label': decode_model_class(label_encoder, specific_model_classes, specific_top_idx),
         'specific_probability': float(specific_probs[specific_top_idx]),
         'model_source': model_source,
         'input_frame': in_data,

@@ -25,7 +25,7 @@ from data import (
     get_officer_trends,
     load_data,
 )
-from predict import get_location_type, predict_crime_risk, run_forecast_loop
+from predict import decode_model_class, get_location_type, predict_crime_risk, run_forecast_loop
 
 
 ct_holidays = holidays.US(state='CT')
@@ -53,6 +53,23 @@ def render_risk_summary_card(label, value, probability):
         """,
         unsafe_allow_html=True,
     )
+
+
+def build_probability_frame(city, result, label_encoder, probs_key, classes_key, label_col, top_n=None):
+    probs = result[probs_key]
+    model_classes = result.get(classes_key, range(len(probs)))
+    rows = []
+    if top_n is None:
+        positions = range(len(probs))
+    else:
+        positions = probs.argsort()[-top_n:][::-1]
+    for pos in positions:
+        rows.append({
+            'City': city,
+            label_col: decode_model_class(label_encoder, model_classes, int(pos)),
+            'Probability': float(probs[int(pos)]),
+        })
+    return pd.DataFrame(rows)
 
 
 def apply_theme(theme_mode):
@@ -621,21 +638,33 @@ with tab2:
         broad_frames = []
         specific_frames = []
         for city, result in risk_results.items():
-            broad_frames.append(pd.DataFrame({
-                'City': city,
-                'Category': models['broad_label_encoder'].classes_,
-                'Probability': result['broad_probs'],
-            }))
-            probs = result['specific_probs']
-            top_idx = probs.argsort()[-5:][::-1]
-            specific_frames.append(pd.DataFrame({
-                'City': city,
-                'Crime Type': models['label_encoder'].inverse_transform(top_idx),
-                'Probability': probs[top_idx],
-            }))
+            try:
+                broad_frames.append(build_probability_frame(
+                    city,
+                    result,
+                    models['broad_label_encoder'],
+                    'broad_probs',
+                    'broad_model_classes',
+                    'Category',
+                ))
+                specific_frames.append(build_probability_frame(
+                    city,
+                    result,
+                    models['label_encoder'],
+                    'specific_probs',
+                    'specific_model_classes',
+                    'Crime Type',
+                    top_n=5,
+                ))
+            except Exception as exc:
+                report_tab_error(f"Risk chart data for {city}", exc)
 
-        broad_chart_df = pd.concat(broad_frames, ignore_index=True).sort_values('Probability', ascending=True)
-        chart_df = pd.concat(specific_frames, ignore_index=True).sort_values('Probability', ascending=True)
+        risk_charts_available = bool(broad_frames and specific_frames)
+        if risk_charts_available:
+            broad_chart_df = pd.concat(broad_frames, ignore_index=True).sort_values('Probability', ascending=True)
+            chart_df = pd.concat(specific_frames, ignore_index=True).sort_values('Probability', ascending=True)
+        else:
+            st.warning("Risk chart data is unavailable for the selected city comparison.")
         with c2:
             st.info(f"""
             **Analysis Context:**
@@ -659,33 +688,34 @@ with tab2:
                     primary_risk_result['specific_probability'],
                 )
 
-        st.divider()
-        chart_cols = st.columns(2)
-        with chart_cols[0]:
-            st.markdown("#### Which broad category is most likely?")
-            try:
-                fig_broad = build_probability_bar_chart(
-                    broad_chart_df,
-                    'Category',
-                    theme,
-                    show_legend=len(risk_results) > 1,
-                )
-                st.plotly_chart(fig_broad, width='stretch')
-            except Exception as exc:
-                report_tab_error("Broad risk chart", exc)
+        if risk_charts_available:
+            st.divider()
+            chart_cols = st.columns(2)
+            with chart_cols[0]:
+                st.markdown("#### Which broad category is most likely?")
+                try:
+                    fig_broad = build_probability_bar_chart(
+                        broad_chart_df,
+                        'Category',
+                        theme,
+                        show_legend=len(risk_results) > 1,
+                    )
+                    st.plotly_chart(fig_broad, width='stretch')
+                except Exception as exc:
+                    report_tab_error("Broad risk chart", exc)
 
-        with chart_cols[1]:
-            st.markdown("#### Which specific offense is most likely?")
-            try:
-                fig_bar = build_probability_bar_chart(
-                    chart_df,
-                    'Crime Type',
-                    theme,
-                    show_legend=len(risk_results) > 1,
-                )
-                st.plotly_chart(fig_bar, width='stretch')
-            except Exception as exc:
-                report_tab_error("Specific offense risk chart", exc)
+            with chart_cols[1]:
+                st.markdown("#### Which specific offense is most likely?")
+                try:
+                    fig_bar = build_probability_bar_chart(
+                        chart_df,
+                        'Crime Type',
+                        theme,
+                        show_legend=len(risk_results) > 1,
+                    )
+                    st.plotly_chart(fig_bar, width='stretch')
+                except Exception as exc:
+                    report_tab_error("Specific offense risk chart", exc)
 
     st.divider()
     c_pie_title, c_pie_select = st.columns([3, 1])
