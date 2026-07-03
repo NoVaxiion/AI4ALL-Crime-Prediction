@@ -68,6 +68,19 @@ def apply_theme(theme_mode):
             background-color: {colors["secondary"]};
             border-right: 1px solid {colors["border"]};
         }}
+        [data-testid="stSidebar"],
+        [data-testid="stSidebar"] *,
+        [data-testid="stSidebar"] h1,
+        [data-testid="stSidebar"] h2,
+        [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] h4,
+        [data-testid="stSidebar"] h5,
+        [data-testid="stSidebar"] h6,
+        [data-testid="stSidebar"] p,
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] span {{
+            color: {colors["text"]} !important;
+        }}
         [data-testid="stHeader"] {{
             background-color: {colors["background"]};
         }}
