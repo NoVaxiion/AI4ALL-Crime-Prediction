@@ -4,4 +4,5 @@
 *__pycache__/
 *.pyc
 .DS_Store
-backtest_outputs/
+backtest_outputs/AI4ALL_Datasets_Backup.zip
+Datasets/
