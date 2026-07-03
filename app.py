@@ -605,23 +605,29 @@ with tab2:
         chart_cols = st.columns(2)
         with chart_cols[0]:
             st.markdown("#### Which broad category is most likely?")
-            fig_broad = build_probability_bar_chart(
-                broad_chart_df,
-                'Category',
-                theme,
-                show_legend=len(risk_results) > 1,
-            )
-            st.plotly_chart(fig_broad, width='stretch')
+            try:
+                fig_broad = build_probability_bar_chart(
+                    broad_chart_df,
+                    'Category',
+                    theme,
+                    show_legend=len(risk_results) > 1,
+                )
+                st.plotly_chart(fig_broad, width='stretch')
+            except Exception as exc:
+                report_tab_error("Broad risk chart", exc)
 
         with chart_cols[1]:
             st.markdown("#### Which specific offense is most likely?")
-            fig_bar = build_probability_bar_chart(
-                chart_df,
-                'Crime Type',
-                theme,
-                show_legend=len(risk_results) > 1,
-            )
-            st.plotly_chart(fig_bar, width='stretch')
+            try:
+                fig_bar = build_probability_bar_chart(
+                    chart_df,
+                    'Crime Type',
+                    theme,
+                    show_legend=len(risk_results) > 1,
+                )
+                st.plotly_chart(fig_bar, width='stretch')
+            except Exception as exc:
+                report_tab_error("Specific offense risk chart", exc)
 
     st.divider()
     c_pie_title, c_pie_select = st.columns([3, 1])
@@ -645,37 +651,43 @@ with tab2:
 
     if historical_frames and len(historical_frames) > 1:
         dist_data = pd.concat(historical_frames, ignore_index=True)
-        fig_history = px.bar(
-            dist_data,
-            x='Count',
-            y='Crime Type',
-            color='City',
-            custom_data=['City'],
-            orientation='h',
-            barmode='group',
-            color_discrete_sequence=px.colors.qualitative.Set2,
-        )
-        fig_history.update_traces(hovertemplate='%{customdata[0]}<br>%{y}<br>Count=%{x:,}<extra></extra>')
-        fig_history.update_layout(
-            height=520,
-            xaxis_title='Reported Incidents',
-            yaxis={'categoryorder': 'total ascending'},
-        )
-        style_plotly_figure(fig_history, theme)
-        st.plotly_chart(fig_history, width='stretch')
+        try:
+            fig_history = px.bar(
+                dist_data,
+                x='Count',
+                y='Crime Type',
+                color='City',
+                custom_data=['City'],
+                orientation='h',
+                barmode='group',
+                color_discrete_sequence=px.colors.qualitative.Set2,
+            )
+            fig_history.update_traces(hovertemplate='%{customdata[0]}<br>%{y}<br>Count=%{x:,}<extra></extra>')
+            fig_history.update_layout(
+                height=520,
+                xaxis_title='Reported Incidents',
+                yaxis={'categoryorder': 'total ascending'},
+            )
+            style_plotly_figure(fig_history, theme)
+            st.plotly_chart(fig_history, width='stretch')
+        except Exception as exc:
+            report_tab_error("Historical comparison chart", exc)
     elif historical_frames:
         dist_data = historical_frames[0]
-        fig_pie = px.pie(
-            dist_data,
-            values='Count',
-            names='Crime Type',
-            hole=0.4,
-            color_discrete_sequence=px.colors.qualitative.Pastel,
-        )
-        fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-        fig_pie.update_layout(showlegend=True, height=500)
-        style_plotly_figure(fig_pie, theme)
-        st.plotly_chart(fig_pie, width='stretch')
+        try:
+            fig_pie = px.pie(
+                dist_data,
+                values='Count',
+                names='Crime Type',
+                hole=0.4,
+                color_discrete_sequence=px.colors.qualitative.Pastel,
+            )
+            fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+            fig_pie.update_layout(showlegend=True, height=500)
+            style_plotly_figure(fig_pie, theme)
+            st.plotly_chart(fig_pie, width='stretch')
+        except Exception as exc:
+            report_tab_error("Historical distribution chart", exc)
     else:
         st.info(f"No historical distribution data available for {', '.join(historical_cities)} in {selected_year}.")
 

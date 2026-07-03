@@ -188,7 +188,7 @@ def predict_crime_risk(
     month = ts.month
     dom = ts.day
     week = int(ts.isocalendar()[1])
-    selected_location_type = location_type or get_location_type(location_area)
+    selected_location_type = str(location_type or get_location_type(location_area)).lower()
     is_payday, days_from_payday = get_payday_features(ts)
 
     city_stats = classifier_context['city_stats_lookup'].get(str(city), {})
@@ -200,6 +200,10 @@ def predict_crime_risk(
     loc_tot = float(classifier_context['loc_total_lookup'].get(str(location_area), 100.0))
     loc_day = float(classifier_context['avg_loc_lookup'].get(str(location_area), 5.0))
     htc = str(classifier_context['hour_typical_lookup'].get((str(city), int(hour)), 'Other'))
+    if selected_location_type not in classifier_context['loc_type_cats']:
+        selected_location_type = 'other'
+    if htc not in classifier_context['htc_cats']:
+        htc = classifier_context['htc_cats'][0] if classifier_context['htc_cats'] else 'Other'
     crime_div = float(classifier_context['avg_div_lookup'].get((str(city), int(hour)), 1.5))
 
     row = {
@@ -246,7 +250,12 @@ def predict_crime_risk(
     }
     for col, cats in cat_map.items():
         if col in in_data.columns:
-            in_data[col] = pd.Categorical(in_data[col].astype(str), categories=cats).codes.astype(int)
+            values = in_data[col].astype(str)
+            if col == 'location_type':
+                values = values.str.lower()
+            fallback = 'other' if col == 'location_type' and 'other' in cats else (cats[0] if cats else '')
+            values = values.where(values.isin(cats), fallback)
+            in_data[col] = pd.Categorical(values, categories=cats).codes.astype(int)
 
     broad_classifier = classifier_context['broad_classifier']
     broad_label_encoder = classifier_context['broad_label_encoder']
