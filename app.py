@@ -1,5 +1,7 @@
 import os
 import pickle
+import logging
+import traceback
 from datetime import datetime, timedelta
 
 # 1. FORCE CPU MODE
@@ -27,6 +29,16 @@ from predict import get_location_type, predict_crime_risk, run_forecast_loop
 
 ct_holidays = holidays.US(state='CT')
 FORECAST_DAYS = 30
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+def report_tab_error(context, exc):
+    """Show a readable app error and write the full traceback to Streamlit logs."""
+    logger.exception("%s failed", context)
+    st.error(f"{context} failed: {type(exc).__name__}: {exc}")
+    with st.expander("Technical details"):
+        st.code(traceback.format_exc())
 
 
 def apply_theme(theme_mode):
@@ -446,7 +458,7 @@ with tab1:
             try:
                 city_forecast = forecast_for_city(city, target_start_date, models, forecast_profiles)
             except Exception as exc:
-                st.warning(f"Could not generate forecast for {city}: {exc}")
+                report_tab_error(f"Volume forecast for {city}", exc)
                 missing_forecasts.append(city)
                 continue
             if city_forecast is None:
@@ -513,7 +525,11 @@ with tab2:
         s_time = st.slider("Hour", 0, 23, 12, key="risk_time_slider")
         s_loc = st.selectbox("Specific Location Area", locations, key="risk_loc_area_select")
         inferred_location_type = get_location_type(s_loc)
-        default_loc_type_idx = lookups['loc_type_cats'].index(inferred_location_type)
+        default_loc_type_idx = (
+            lookups['loc_type_cats'].index(inferred_location_type)
+            if inferred_location_type in lookups['loc_type_cats']
+            else 0
+        )
         s_loc_type = st.selectbox(
             "Location Type",
             lookups['loc_type_cats'],
@@ -544,6 +560,7 @@ with tab2:
                     risk_context,
                 )
             except Exception as exc:
+                logger.exception("Risk prediction failed for %s", city)
                 risk_failures.append(f"{city}: {exc}")
 
     if risk_failures:
@@ -885,8 +902,21 @@ with tab3:
             st.caption(f"Officer Rate: {latest['officers_per_1000_people']:.2f} per 1k")
             st.caption(f"Data as of: {latest['month_start'].strftime('%B %Y')}")
         else:
-            status_cols = st.columns(len(trend_cities))
-            for i, city in enumerate(trend_cities):
+            status_cities = [
+                city for city in trend_cities
+                if not chart_data[chart_data['city'].astype(str) == city].empty
+            ]
+            missing_status_cities = [
+                city for city in trend_cities
+                if city not in status_cities
+            ]
+            if missing_status_cities:
+                st.warning(
+                    "No current officer status data available for: "
+                    + ", ".join(missing_status_cities)
+                )
+            status_cols = st.columns(len(status_cities))
+            for i, city in enumerate(status_cities):
                 latest = chart_data[chart_data['city'].astype(str) == city].iloc[-1]
                 status_cols[i].metric(f"{city} Officers", f"{int(latest['total_officers']):,}")
                 status_cols[i].caption(
