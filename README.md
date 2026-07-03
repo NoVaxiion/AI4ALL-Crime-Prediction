@@ -1,6 +1,7 @@
-
-
+## Video Demo
 https://github.com/user-attachments/assets/eb2b3bb1-20dc-4133-814d-54a8f1a3953a
+
+---
 
 # CT-Crimes: AI4ALL Ignite Crime Prediction Project
 
@@ -100,14 +101,6 @@ tests/              Unit tests for forecast and feature-engineering logic
 FBI Crime Data Explorer:
 
 https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads
-
----
-
-## Video Demo
-
-
-https://github.com/user-attachments/assets/51d8895d-c1d3-4205-b770-1c7e41cc5cdd
-
 
 ---
 
