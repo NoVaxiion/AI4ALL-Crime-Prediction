@@ -6,11 +6,26 @@ import streamlit as st
 
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / 'Models'
+APP_DATA_COLUMNS = [
+    'year',
+    'month',
+    'day',
+    'hour',
+    'city',
+    'location_area',
+    'offense_category_name',
+    'population',
+    'total_officers',
+    'male_officer',
+    'female_officer',
+    'officers_per_1000_people',
+    'crime_rate_per_1000_people',
+]
 
 
 @st.cache_data
 def load_data(data_path=MODELS_DIR / 'combined_data.csv'):
-    df = pd.read_csv(data_path)
+    df = pd.read_csv(data_path, usecols=APP_DATA_COLUMNS)
     df['date'] = pd.to_datetime(df[['year', 'month', 'day']])
     test_period = df[df['date'] > (df['date'].max() - pd.Timedelta(days=90))]
     test_counts = test_period['offense_category_name'].value_counts()
@@ -18,7 +33,14 @@ def load_data(data_path=MODELS_DIR / 'combined_data.csv'):
     df['offense_category_clean'] = df['offense_category_name'].apply(
         lambda x: 'Other' if x in rare else x
     )
-    df['hour'] = df['hour'].fillna(0).astype(int)
+    df['year'] = df['year'].astype('int16')
+    df['month'] = df['month'].astype('int8')
+    df['day'] = df['day'].astype('int8')
+    df['hour'] = df['hour'].fillna(0).astype('int8')
+    for col in ['population', 'total_officers', 'male_officer', 'female_officer']:
+        df[col] = df[col].fillna(0).astype('int32')
+    for col in ['officers_per_1000_people', 'crime_rate_per_1000_people']:
+        df[col] = df[col].astype('float32')
     for col in ['city', 'location_area', 'offense_category_name']:
         df[col] = df[col].astype('category')
     return df

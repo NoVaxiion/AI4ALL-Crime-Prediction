@@ -30,6 +30,9 @@ from predict import decode_model_class, get_location_type, predict_crime_risk, r
 
 ct_holidays = holidays.US(state='CT')
 FORECAST_DAYS = 30
+DEPLOY_LIGHT_MODE = os.getenv("PROJECT360_DEPLOY_LIGHT", "").lower() in {"1", "true", "yes"} or bool(
+    os.getenv("STREAMLIT_RUNTIME_ENV")
+)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -390,17 +393,25 @@ def load_models():
     label_encoder = load_required('label_encoder_l2.pkl')
     classifier_features = load_required('advanced_features.pkl')
 
-    per_city_forecasters = load_optional('per_city_forecasters.pkl', {}, 'Per-city volume forecasting')
-    per_city_forecast_features = load_optional('per_city_forecast_features.pkl', None, 'Per-city volume forecasting')
-    if per_city_forecasters and per_city_forecast_features is None:
+    if DEPLOY_LIGHT_MODE:
         optional_warnings.append(
-            'Per-city volume forecasting disabled: forecasters were found but feature schema is missing.'
+            'Deployment light mode is enabled: per-city model files are not loaded to stay within memory limits.'
         )
         per_city_forecasters = {}
-    elif per_city_forecast_features is None:
         per_city_forecast_features = forecast_features
+        per_city_classifiers = {}
+    else:
+        per_city_forecasters = load_optional('per_city_forecasters.pkl', {}, 'Per-city volume forecasting')
+        per_city_forecast_features = load_optional('per_city_forecast_features.pkl', None, 'Per-city volume forecasting')
+        if per_city_forecasters and per_city_forecast_features is None:
+            optional_warnings.append(
+                'Per-city volume forecasting disabled: forecasters were found but feature schema is missing.'
+            )
+            per_city_forecasters = {}
+        elif per_city_forecast_features is None:
+            per_city_forecast_features = forecast_features
 
-    per_city_classifiers = load_optional('per_city_models.pkl', {}, 'City-specific risk classification')
+        per_city_classifiers = load_optional('per_city_models.pkl', {}, 'City-specific risk classification')
 
     return {
         'forecaster': forecaster,
