@@ -2,10 +2,13 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+from huggingface_hub import hf_hub_download
 
 
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / 'Models'
+DEFAULT_HF_REPO_ID = 'NoVaxiion/project360-assets'
+DEFAULT_HF_REPO_TYPE = 'dataset'
 APP_DATA_COLUMNS = [
     'year',
     'month',
@@ -23,8 +26,56 @@ APP_DATA_COLUMNS = [
 ]
 
 
+def get_secret_or_env(name, default=None):
+    try:
+        return st.secrets.get(name, default)
+    except (AttributeError, FileNotFoundError, KeyError):
+        return default
+
+
+def is_lfs_pointer(path):
+    try:
+        with open(path, 'rb') as file:
+            return file.read(80).startswith(b'version https://git-lfs.github.com/spec')
+    except FileNotFoundError:
+        raise
+    except OSError:
+        return False
+
+
+def resolve_asset_path(filename, required=True):
+    """Return an app asset path, preferring Hugging Face over Git/LFS."""
+    repo_id = get_secret_or_env('HF_REPO_ID', DEFAULT_HF_REPO_ID)
+    repo_type = get_secret_or_env('HF_REPO_TYPE', DEFAULT_HF_REPO_TYPE)
+    token = get_secret_or_env('HF_TOKEN')
+    try:
+        return Path(
+            hf_hub_download(
+                repo_id=repo_id,
+                filename=filename,
+                repo_type=repo_type,
+                token=token,
+            )
+        )
+    except Exception as exc:
+        local_path = MODELS_DIR / filename
+        if local_path.exists() and not is_lfs_pointer(local_path):
+            return local_path
+        if required:
+            st.error(
+                f"Could not load required asset `{filename}` from Hugging Face or local `Models/`. "
+                "If the Hugging Face repo is private, add `HF_TOKEN`, `HF_REPO_ID`, and "
+                "`HF_REPO_TYPE` to Streamlit secrets."
+            )
+            st.exception(exc)
+            st.stop()
+        return None
+
+
 @st.cache_data
-def load_data(data_path=MODELS_DIR / 'combined_data.csv'):
+def load_data(data_path=None):
+    if data_path is None:
+        data_path = resolve_asset_path('combined_data.csv')
     df = pd.read_csv(data_path, usecols=APP_DATA_COLUMNS)
     df['date'] = pd.to_datetime(df[['year', 'month', 'day']])
     test_period = df[df['date'] > (df['date'].max() - pd.Timedelta(days=90))]

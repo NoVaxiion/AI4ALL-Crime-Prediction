@@ -23,7 +23,9 @@ from data import (
     get_aggregate_data,
     get_crime_distribution,
     get_officer_trends,
+    is_lfs_pointer,
     load_data,
+    resolve_asset_path,
 )
 from predict import decode_model_class, get_location_type, predict_crime_risk, run_forecast_loop
 
@@ -336,31 +338,22 @@ st.markdown("### Crime, Population & Officer Awareness")
 def load_models():
     optional_warnings = []
 
-    def is_lfs_pointer(path):
-        try:
-            with open(path, 'rb') as file:
-                return file.read(80).startswith(b'version https://git-lfs.github.com/spec')
-        except FileNotFoundError:
-            raise
-        except OSError:
-            return False
-
     def load_required(filename):
-        path = MODELS_DIR / filename
+        path = resolve_asset_path(filename, required=True)
         try:
             if is_lfs_pointer(path):
                 st.error(
-                    f"Required model file `{path}` is a Git LFS pointer, not the real file. "
-                    "Make sure Git LFS is enabled and the LFS objects are available in the deployed repo."
+                    f"Required model file `{filename}` resolved to a Git LFS pointer, not the real file. "
+                    "Upload the real file to Hugging Face and confirm the filename matches."
                 )
                 st.stop()
             return joblib.load(path)
         except FileNotFoundError:
-            st.error(f"❌ Required model file not found: `{path}`")
+            st.error(f"❌ Required model file not found: `{filename}`")
             st.stop()
         except (KeyError, pickle.UnpicklingError, EOFError, ValueError) as exc:
             st.error(
-                f"Required model file `{path}` could not be loaded. "
+                f"Required model file `{filename}` could not be loaded. "
                 "This usually means the deployed file is incomplete, not pulled from Git LFS, "
                 "or the deployment Python/package versions do not match the training environment. "
                 f"Details: {type(exc).__name__}"
@@ -368,20 +361,23 @@ def load_models():
             st.stop()
 
     def load_optional(filename, fallback, feature_name):
-        path = MODELS_DIR / filename
+        path = resolve_asset_path(filename, required=False)
+        if path is None:
+            optional_warnings.append(f"{feature_name} disabled: missing `{filename}`.")
+            return fallback
         try:
             if is_lfs_pointer(path):
                 optional_warnings.append(
-                    f"{feature_name} disabled: `{path}` is a Git LFS pointer, not the real file."
+                    f"{feature_name} disabled: `{filename}` is a Git LFS pointer, not the real file."
                 )
                 return fallback
             return joblib.load(path)
         except FileNotFoundError:
-            optional_warnings.append(f"{feature_name} disabled: missing `{path}`.")
+            optional_warnings.append(f"{feature_name} disabled: missing `{filename}`.")
             return fallback
         except (KeyError, pickle.UnpicklingError, EOFError, ValueError) as exc:
             optional_warnings.append(
-                f"{feature_name} disabled: `{path}` could not be loaded ({type(exc).__name__})."
+                f"{feature_name} disabled: `{filename}` could not be loaded ({type(exc).__name__})."
             )
             return fallback
 
