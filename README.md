@@ -97,17 +97,11 @@ data.py             Data loading, aggregation, and lookup-table helpers
 predict.py          Forecasting and risk inference helpers
 feature_engineering.py  Shared training/inference feature definitions
 training_pipeline.py    Evaluation, baseline, checkpoint, and manifest helpers
-scripts/split_per_city_assets.py  One-time splitter for memory-safe per-city deployment
-scripts/build_app_data_bundle.py  Compact replacement for the runtime incident CSV
 gc_train_model.ipynb    Google Colab training and untouched-test workflow
 requirements.txt    Python dependencies
-requirements-train.txt  Additional Colab-only training dependencies
 Models/             Ignored local runtime artifacts; production assets use Hugging Face
 .streamlit/         Streamlit theme configuration
-tests/              Leakage, schema, deployment, and frontend-preservation tests
 ```
-
-The full leakage findings are documented in `LEAKAGE_AUDIT.md`. Responsible-use details are in `MODEL_CARD.md`, and Colab/Hugging Face instructions are in `DEPLOYMENT.md`.
 
 ---
 

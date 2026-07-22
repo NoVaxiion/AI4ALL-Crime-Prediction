@@ -1,5 +1,6 @@
 .venv/
 .vscode/
+.devcontainer/
 .env
 .claude/
 .streamlit/secrets.toml
@@ -17,6 +18,13 @@ __pycache__/
 .DS_Store
 backtest_outputs/
 reports/
+scripts/
+tests/
+pytest.ini
+requirements-train.txt
+DEPLOYMENT.md
+LEAKAGE_AUDIT.md
+MODEL_CARD.md
 AI4ALL_Datasets_Backup.zip
 Datasets/
 Models/
