@@ -8,15 +8,21 @@ import pandas as pd
 import streamlit as st
 from huggingface_hub import hf_hub_download
 
-from feature_engineering import LOCATION_TYPE_KEYWORDS
-
 
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / 'Models'
 DEFAULT_HF_REPO_ID = 'NoVaxiion/project360-assets'
 DEFAULT_HF_REPO_TYPE = 'dataset'
 PER_CITY_INDEX_PATH = 'per_city/index.json'
-LOCATION_TYPE_CATEGORIES = sorted([name for name, _ in LOCATION_TYPE_KEYWORDS] + ['other'])
+LOCATION_TYPE_CATEGORIES = [
+    'commercial',
+    'education',
+    'nightlife',
+    'other',
+    'residential',
+    'retail',
+    'street',
+]
 APP_DATA_COLUMNS = [
     'year',
     'month',
@@ -81,18 +87,6 @@ def resolve_asset_path(filename, required=True):
             )
             st.exception(exc)
             st.stop()
-        return None
-
-
-@st.cache_resource
-def load_model_manifest():
-    """Load optional version and evaluation metadata without affecting app startup."""
-    path = resolve_asset_path('model_manifest.json', required=False)
-    if path is None or is_lfs_pointer(path):
-        return None
-    try:
-        return json.loads(path.read_text())
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
 
 

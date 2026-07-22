@@ -2,8 +2,6 @@ streamlit==1.55.0
 pandas==2.2.3
 numpy==1.26.4
 lightgbm==4.6.0
-catboost==1.2.8
-xgboost==2.1.4
 plotly==6.6.0
 holidays==0.92
 joblib==1.5.3

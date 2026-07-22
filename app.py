@@ -16,7 +16,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
-from feature_engineering import FORECAST_PREDICTION_MODES
 from data import (
     build_bundle_lookup_tables,
     build_forecast_profiles,
@@ -27,7 +26,6 @@ from data import (
     is_lfs_pointer,
     load_app_data_bundle,
     load_data,
-    load_model_manifest,
     load_per_city_index,
     load_split_city_model,
     resolve_asset_path,
@@ -397,81 +395,13 @@ def load_optional_model(filename, fallback, feature_name, warnings):
 
 
 @st.cache_resource
-def load_feature_artifacts():
-    """Load the shared v2 feature contract when retrained artifacts are available."""
-    path = resolve_asset_path('feature_artifacts.pkl', required=False)
-    if path is None or is_lfs_pointer(path):
-        return None
-    try:
-        feature_artifacts = joblib.load(path)
-        manifest = load_model_manifest()
-        if manifest:
-            artifact_version = str(feature_artifacts.get('model_version', ''))
-            manifest_version = str(manifest.get('model_version', ''))
-            if artifact_version and manifest_version and artifact_version != manifest_version:
-                st.error('Model metadata does not match the downloaded feature artifacts.')
-                st.stop()
-            feature_artifacts['model_manifest'] = manifest
-        return feature_artifacts
-    except (
-        FileNotFoundError,
-        KeyError,
-        pickle.UnpicklingError,
-        EOFError,
-        ValueError,
-        TypeError,
-        AttributeError,
-        ImportError,
-        OSError,
-    ):
-        return None
-
-
-def validate_forecast_contract(feature_artifacts, forecast_features):
-    """Reject incompatible forecast metadata before the first UI prediction."""
-    forecast_artifacts = feature_artifacts.get('forecast', {})
-    expected_features = list(forecast_artifacts.get('feature_columns', []))
-    if not expected_features:
-        raise ValueError('Feature artifacts do not define the forecast feature schema.')
-    if list(forecast_features) != expected_features:
-        raise ValueError('The forecaster feature list does not match `feature_artifacts.pkl`.')
-
-    prediction_mode = str(forecast_artifacts.get('prediction_mode', 'direct'))
-    if prediction_mode not in FORECAST_PREDICTION_MODES:
-        raise ValueError(f'Unsupported forecast prediction mode: {prediction_mode}.')
-
-    model_weight = float(forecast_artifacts.get('model_weight', 1.0))
-    if not 0.0 <= model_weight <= 1.0:
-        raise ValueError('Forecast model weight must be between 0 and 1.')
-
-    forecast_horizon = int(forecast_artifacts.get('forecast_horizon', FORECAST_DAYS))
-    if forecast_horizon != FORECAST_DAYS:
-        raise ValueError(
-            f'The saved forecaster targets {forecast_horizon} days, but the app requires {FORECAST_DAYS}.'
-        )
-
-
-@st.cache_resource
 def load_forecast_models():
     optional_warnings = []
 
     forecaster = load_required_model('crime_forecaster.pkl')
     forecast_features = load_required_model('forecast_features.pkl')
-    feature_artifacts = load_feature_artifacts()
-    if 'city_code' in forecast_features and feature_artifacts is None:
-        st.error('The version 2 forecaster requires `feature_artifacts.pkl`, but that file is unavailable.')
-        st.stop()
-    if feature_artifacts is not None:
-        try:
-            validate_forecast_contract(feature_artifacts, forecast_features)
-        except (KeyError, TypeError, ValueError) as exc:
-            st.error(f'The saved forecast artifacts are incompatible: {exc}')
-            st.stop()
 
     if DEPLOY_LIGHT_MODE:
-        per_city_forecasters = {}
-        per_city_forecast_features = forecast_features
-    elif feature_artifacts is not None:
         per_city_forecasters = {}
         per_city_forecast_features = forecast_features
     else:
@@ -494,7 +424,6 @@ def load_forecast_models():
         'forecast_features': forecast_features,
         'per_city_forecasters': per_city_forecasters,
         'per_city_forecast_features': per_city_forecast_features,
-        'feature_artifacts': feature_artifacts,
         'optional_warnings': optional_warnings,
     }
 
@@ -508,14 +437,8 @@ def load_risk_models():
     classifier = load_required_model('crime_classifier_l2_specific.pkl')
     label_encoder = load_required_model('label_encoder_l2.pkl')
     classifier_features = load_required_model('advanced_features.pkl')
-    feature_artifacts = load_feature_artifacts()
-    if 'city_code' in classifier_features and feature_artifacts is None:
-        st.error('The version 2 classifiers require `feature_artifacts.pkl`, but that file is unavailable.')
-        st.stop()
 
     if DEPLOY_LIGHT_MODE:
-        per_city_classifiers = {}
-    elif feature_artifacts is not None:
         per_city_classifiers = {}
     else:
         per_city_classifiers = load_optional_model(
@@ -529,7 +452,6 @@ def load_risk_models():
         'label_encoder': label_encoder,
         'classifier_features': classifier_features,
         'per_city_classifiers': per_city_classifiers,
-        'feature_artifacts': feature_artifacts,
         'optional_warnings': optional_warnings,
     }
 
@@ -545,7 +467,6 @@ def forecast_for_city(city, start_date, models, forecast_profiles):
         ct_holidays=ct_holidays,
         steps=FORECAST_DAYS,
         target_start_date=start_date,
-        feature_artifacts=models['feature_artifacts'],
     )
 
 
@@ -559,14 +480,11 @@ def build_risk_context(models, lookups):
         'label_encoder': models['label_encoder'],
         'classifier_features': models['classifier_features'],
         'per_city_classifiers': models['per_city_classifiers'],
-        'feature_artifacts': models['feature_artifacts'],
     }
 
 
 def with_selected_city_forecasters(models, cities):
     """Attach only the requested legacy city forecasters to the cached global models."""
-    if models['feature_artifacts'] is not None:
-        return models
     index = load_per_city_index()
     if index is None:
         return models
@@ -589,8 +507,6 @@ def with_selected_city_forecasters(models, cities):
 
 def with_selected_city_classifiers(models, cities):
     """Attach only requested legacy city classifiers, retaining statewide fallback."""
-    if models['feature_artifacts'] is not None:
-        return models
     selected = dict(models['per_city_classifiers'])
     for city in cities:
         if city in selected:
@@ -604,13 +520,6 @@ def with_selected_city_classifiers(models, cities):
 with st.spinner("Booting up system..."):
     forecast_models = load_forecast_models()
     app_data_bundle = load_app_data_bundle()
-    if (
-        app_data_bundle is not None
-        and forecast_models['feature_artifacts'] is not None
-        and str(app_data_bundle['model_version'])
-        != str(forecast_models['feature_artifacts'].get('model_version'))
-    ):
-        app_data_bundle = None
     if app_data_bundle is not None:
         ts_data = app_data_bundle['daily_city']
         officer_raw_data = app_data_bundle['officer_trends']
@@ -622,7 +531,7 @@ with st.spinner("Booting up system..."):
         ts_data = get_aggregate_data(raw_df)
         officer_raw_data = get_officer_trends(raw_df)
         crime_distribution_data = raw_df
-        lookups = build_lookup_tables(raw_df, include_legacy=forecast_models['feature_artifacts'] is None)
+        lookups = build_lookup_tables(raw_df, include_legacy=True)
         available_years = sorted(raw_df['year'].unique(), reverse=True)
     forecast_profiles = build_forecast_profiles(ts_data)
 

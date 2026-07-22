@@ -67,25 +67,20 @@ The Streamlit dashboard is organized into three main sections.
 
 ## Methodology
 
-The project uses public Connecticut incident data and officer staffing context to train and support several model-driven views. Model development uses chronological training, validation, and untouched final-test periods rather than random splitting.
+The project uses public Connecticut incident data and officer staffing context to train and support several model-driven views. The original Google Colab notebook contains the data preparation, feature engineering, model training, evaluation, and model-export workflow used for this project.
 
 The current app uses:
 
-- shared leakage-safe feature engineering for date, seasonality, holidays, location context, and city context
-- complete city/date panels so forecast lags refer to earlier calendar days
-- app-aligned recursive 30-day validation in which predictions, never hidden holdout outcomes, feed later forecast days
-- validation-learned blending between the selected model and a seven-day rolling baseline, including a zero-model fallback when the model adds no value
-- training-only category vocabularies, rare-label decisions, and historical lookup tables
-- previous-complete-year handling for annual staffing, population, and rate fields
-- count-regression comparisons for incident volume forecasting
-- calibrated classification comparisons for broad and specific offense probability estimates
-- rolling-origin validation, meaningful baselines, and one untouched chronological test period used only after all choices are frozen
+- saved global and optional city-specific models for incident-volume forecasting
+- saved broad and specific offense classifiers for probability estimates
+- temporal, holiday, location, city, population, and staffing features
 - historical aggregation for city, location, officer, and offense-type comparisons
+- a 30-day recursive forecast that combines model output with historical city patterns
 - Streamlit and Plotly for interactive visualization
 
-The Colab notebook compares unsuccessful and successful experiments rather than reporting only the winning model. Final metrics are generated into the model manifest and reports; they are not hardcoded in the dashboard or README.
+Model performance values should be taken from the executed notebook that produced the saved artifacts. They are experimental results from historical data and are not guarantees of future performance.
 
-For deployment, Hugging Face stores compact selected models and a summarized dashboard data bundle. The full incident-level dataset is not downloaded by Streamlit after version 2 artifacts are uploaded.
+For deployment, Hugging Face stores the model and data artifacts used by Streamlit so large binary files do not need to be stored in the GitHub repository.
 
 ---
 
@@ -95,9 +90,7 @@ For deployment, Hugging Face stores compact selected models and a summarized das
 app.py              Streamlit user interface and charts
 data.py             Data loading, aggregation, and lookup-table helpers
 predict.py          Forecasting and risk inference helpers
-feature_engineering.py  Shared training/inference feature definitions
-training_pipeline.py    Evaluation, baseline, checkpoint, and manifest helpers
-gc_train_model.ipynb    Google Colab training and untouched-test workflow
+gc_train_model.ipynb    Original Google Colab model-training notebook
 requirements.txt    Python dependencies
 Models/             Ignored local runtime artifacts; production assets use Hugging Face
 .streamlit/         Streamlit theme configuration
