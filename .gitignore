@@ -6,6 +6,7 @@
 .streamlit/secrets.toml
 .ipynb_checkpoints/
 gc_train_model (1).ipynb
+gc_train_model.ipynb
 __pycache__/
 */__pycache__/
 *.pyc

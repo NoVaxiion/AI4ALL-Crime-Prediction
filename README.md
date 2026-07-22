@@ -67,7 +67,7 @@ The Streamlit dashboard is organized into three main sections.
 
 ## Methodology
 
-The project uses public Connecticut incident data and officer staffing context to train and support several model-driven views. The original Google Colab notebook contains the data preparation, feature engineering, model training, evaluation, and model-export workflow used for this project.
+The project uses public Connecticut incident data and officer staffing context to train and support several model-driven views. Model training is performed separately in Google Colab, with only the resulting runtime artifacts used by the deployed dashboard.
 
 The current app uses:
 
@@ -90,7 +90,6 @@ For deployment, Hugging Face stores the model and data artifacts used by Streaml
 app.py              Streamlit user interface and charts
 data.py             Data loading, aggregation, and lookup-table helpers
 predict.py          Forecasting and risk inference helpers
-gc_train_model.ipynb    Original Google Colab model-training notebook
 requirements.txt    Python dependencies
 Models/             Ignored local runtime artifacts; production assets use Hugging Face
 .streamlit/         Streamlit theme configuration
