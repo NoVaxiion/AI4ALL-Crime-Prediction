@@ -16,25 +16,28 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
+from feature_engineering import FORECAST_PREDICTION_MODES
 from data import (
-    MODELS_DIR,
+    build_bundle_lookup_tables,
     build_forecast_profiles,
     build_lookup_tables,
     get_aggregate_data,
     get_crime_distribution,
     get_officer_trends,
     is_lfs_pointer,
+    load_app_data_bundle,
     load_data,
+    load_model_manifest,
+    load_per_city_index,
+    load_split_city_model,
     resolve_asset_path,
 )
 from predict import decode_model_class, get_location_type, predict_crime_risk, run_forecast_loop
 
 
-ct_holidays = holidays.US(state='CT')
+ct_holidays = holidays.US(subdiv='CT')
 FORECAST_DAYS = 30
-DEPLOY_LIGHT_MODE = os.getenv("PROJECT360_DEPLOY_LIGHT", "").lower() in {"1", "true", "yes"} or bool(
-    os.getenv("STREAMLIT_RUNTIME_ENV")
-)
+DEPLOY_LIGHT_MODE = os.getenv("PROJECT360_DEPLOY_LIGHT", "true").lower() not in {"0", "false", "no"}
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -334,71 +337,150 @@ st.title("🚓 ProjeCT 360")
 st.markdown("### Crime, Population & Officer Awareness")
 
 
+def load_required_model(filename):
+    """Load a required joblib asset or stop with a deployment-friendly error."""
+    path = resolve_asset_path(filename, required=True)
+    try:
+        if is_lfs_pointer(path):
+            st.error(
+                f"Required model file `{filename}` resolved to a Git LFS pointer, not the real file. "
+                "Upload the real file to Hugging Face and confirm the filename matches."
+            )
+            st.stop()
+        return joblib.load(path)
+    except FileNotFoundError:
+        st.error(f"Required model file not found: `{filename}`")
+        st.stop()
+    except (
+        KeyError,
+        pickle.UnpicklingError,
+        EOFError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        ImportError,
+        OSError,
+    ) as exc:
+        st.error(
+            f"Required model file `{filename}` could not be loaded. "
+            "The file may be incomplete or the deployment Python/package versions may not match "
+            f"the training environment. Details: {type(exc).__name__}"
+        )
+        st.stop()
+
+
+def load_optional_model(filename, fallback, feature_name, warnings):
+    """Load an optional joblib asset, recording why its feature was disabled."""
+    path = resolve_asset_path(filename, required=False)
+    if path is None:
+        warnings.append(f"{feature_name} disabled: missing `{filename}`.")
+        return fallback
+    try:
+        if is_lfs_pointer(path):
+            warnings.append(f"{feature_name} disabled: `{filename}` is a Git LFS pointer, not the real file.")
+            return fallback
+        return joblib.load(path)
+    except FileNotFoundError:
+        warnings.append(f"{feature_name} disabled: missing `{filename}`.")
+    except (
+        KeyError,
+        pickle.UnpicklingError,
+        EOFError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        ImportError,
+        OSError,
+    ) as exc:
+        warnings.append(f"{feature_name} disabled: `{filename}` could not be loaded ({type(exc).__name__}).")
+    return fallback
+
+
 @st.cache_resource
-def load_models():
+def load_feature_artifacts():
+    """Load the shared v2 feature contract when retrained artifacts are available."""
+    path = resolve_asset_path('feature_artifacts.pkl', required=False)
+    if path is None or is_lfs_pointer(path):
+        return None
+    try:
+        feature_artifacts = joblib.load(path)
+        manifest = load_model_manifest()
+        if manifest:
+            artifact_version = str(feature_artifacts.get('model_version', ''))
+            manifest_version = str(manifest.get('model_version', ''))
+            if artifact_version and manifest_version and artifact_version != manifest_version:
+                st.error('Model metadata does not match the downloaded feature artifacts.')
+                st.stop()
+            feature_artifacts['model_manifest'] = manifest
+        return feature_artifacts
+    except (
+        FileNotFoundError,
+        KeyError,
+        pickle.UnpicklingError,
+        EOFError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        ImportError,
+        OSError,
+    ):
+        return None
+
+
+def validate_forecast_contract(feature_artifacts, forecast_features):
+    """Reject incompatible forecast metadata before the first UI prediction."""
+    forecast_artifacts = feature_artifacts.get('forecast', {})
+    expected_features = list(forecast_artifacts.get('feature_columns', []))
+    if not expected_features:
+        raise ValueError('Feature artifacts do not define the forecast feature schema.')
+    if list(forecast_features) != expected_features:
+        raise ValueError('The forecaster feature list does not match `feature_artifacts.pkl`.')
+
+    prediction_mode = str(forecast_artifacts.get('prediction_mode', 'direct'))
+    if prediction_mode not in FORECAST_PREDICTION_MODES:
+        raise ValueError(f'Unsupported forecast prediction mode: {prediction_mode}.')
+
+    model_weight = float(forecast_artifacts.get('model_weight', 1.0))
+    if not 0.0 <= model_weight <= 1.0:
+        raise ValueError('Forecast model weight must be between 0 and 1.')
+
+    forecast_horizon = int(forecast_artifacts.get('forecast_horizon', FORECAST_DAYS))
+    if forecast_horizon != FORECAST_DAYS:
+        raise ValueError(
+            f'The saved forecaster targets {forecast_horizon} days, but the app requires {FORECAST_DAYS}.'
+        )
+
+
+@st.cache_resource
+def load_forecast_models():
     optional_warnings = []
 
-    def load_required(filename):
-        path = resolve_asset_path(filename, required=True)
+    forecaster = load_required_model('crime_forecaster.pkl')
+    forecast_features = load_required_model('forecast_features.pkl')
+    feature_artifacts = load_feature_artifacts()
+    if 'city_code' in forecast_features and feature_artifacts is None:
+        st.error('The version 2 forecaster requires `feature_artifacts.pkl`, but that file is unavailable.')
+        st.stop()
+    if feature_artifacts is not None:
         try:
-            if is_lfs_pointer(path):
-                st.error(
-                    f"Required model file `{filename}` resolved to a Git LFS pointer, not the real file. "
-                    "Upload the real file to Hugging Face and confirm the filename matches."
-                )
-                st.stop()
-            return joblib.load(path)
-        except FileNotFoundError:
-            st.error(f"❌ Required model file not found: `{filename}`")
+            validate_forecast_contract(feature_artifacts, forecast_features)
+        except (KeyError, TypeError, ValueError) as exc:
+            st.error(f'The saved forecast artifacts are incompatible: {exc}')
             st.stop()
-        except (KeyError, pickle.UnpicklingError, EOFError, ValueError) as exc:
-            st.error(
-                f"Required model file `{filename}` could not be loaded. "
-                "This usually means the deployed file is incomplete, not pulled from Git LFS, "
-                "or the deployment Python/package versions do not match the training environment. "
-                f"Details: {type(exc).__name__}"
-            )
-            st.stop()
-
-    def load_optional(filename, fallback, feature_name):
-        path = resolve_asset_path(filename, required=False)
-        if path is None:
-            optional_warnings.append(f"{feature_name} disabled: missing `{filename}`.")
-            return fallback
-        try:
-            if is_lfs_pointer(path):
-                optional_warnings.append(
-                    f"{feature_name} disabled: `{filename}` is a Git LFS pointer, not the real file."
-                )
-                return fallback
-            return joblib.load(path)
-        except FileNotFoundError:
-            optional_warnings.append(f"{feature_name} disabled: missing `{filename}`.")
-            return fallback
-        except (KeyError, pickle.UnpicklingError, EOFError, ValueError) as exc:
-            optional_warnings.append(
-                f"{feature_name} disabled: `{filename}` could not be loaded ({type(exc).__name__})."
-            )
-            return fallback
-
-    forecaster = load_required('crime_forecaster.pkl')
-    forecast_features = load_required('forecast_features.pkl')
-    broad_classifier = load_required('crime_classifier_l1_violent_property.pkl')
-    broad_label_encoder = load_required('label_encoder_l1.pkl')
-    classifier = load_required('crime_classifier_l2_specific.pkl')
-    label_encoder = load_required('label_encoder_l2.pkl')
-    classifier_features = load_required('advanced_features.pkl')
 
     if DEPLOY_LIGHT_MODE:
-        optional_warnings.append(
-            'Deployment light mode is enabled: per-city model files are not loaded to stay within memory limits.'
-        )
         per_city_forecasters = {}
         per_city_forecast_features = forecast_features
-        per_city_classifiers = {}
+    elif feature_artifacts is not None:
+        per_city_forecasters = {}
+        per_city_forecast_features = forecast_features
     else:
-        per_city_forecasters = load_optional('per_city_forecasters.pkl', {}, 'Per-city volume forecasting')
-        per_city_forecast_features = load_optional('per_city_forecast_features.pkl', None, 'Per-city volume forecasting')
+        per_city_forecasters = load_optional_model(
+            'per_city_forecasters.pkl', {}, 'Per-city volume forecasting', optional_warnings
+        )
+        per_city_forecast_features = load_optional_model(
+            'per_city_forecast_features.pkl', None, 'Per-city volume forecasting', optional_warnings
+        )
         if per_city_forecasters and per_city_forecast_features is None:
             optional_warnings.append(
                 'Per-city volume forecasting disabled: forecasters were found but feature schema is missing.'
@@ -407,19 +489,47 @@ def load_models():
         elif per_city_forecast_features is None:
             per_city_forecast_features = forecast_features
 
-        per_city_classifiers = load_optional('per_city_models.pkl', {}, 'City-specific risk classification')
-
     return {
         'forecaster': forecaster,
         'forecast_features': forecast_features,
         'per_city_forecasters': per_city_forecasters,
         'per_city_forecast_features': per_city_forecast_features,
+        'feature_artifacts': feature_artifacts,
+        'optional_warnings': optional_warnings,
+    }
+
+
+@st.cache_resource
+def load_risk_models():
+    optional_warnings = []
+
+    broad_classifier = load_required_model('crime_classifier_l1_violent_property.pkl')
+    broad_label_encoder = load_required_model('label_encoder_l1.pkl')
+    classifier = load_required_model('crime_classifier_l2_specific.pkl')
+    label_encoder = load_required_model('label_encoder_l2.pkl')
+    classifier_features = load_required_model('advanced_features.pkl')
+    feature_artifacts = load_feature_artifacts()
+    if 'city_code' in classifier_features and feature_artifacts is None:
+        st.error('The version 2 classifiers require `feature_artifacts.pkl`, but that file is unavailable.')
+        st.stop()
+
+    if DEPLOY_LIGHT_MODE:
+        per_city_classifiers = {}
+    elif feature_artifacts is not None:
+        per_city_classifiers = {}
+    else:
+        per_city_classifiers = load_optional_model(
+            'per_city_models.pkl', {}, 'City-specific risk classification', optional_warnings
+        )
+
+    return {
         'broad_classifier': broad_classifier,
         'broad_label_encoder': broad_label_encoder,
         'classifier': classifier,
         'label_encoder': label_encoder,
         'classifier_features': classifier_features,
         'per_city_classifiers': per_city_classifiers,
+        'feature_artifacts': feature_artifacts,
         'optional_warnings': optional_warnings,
     }
 
@@ -435,6 +545,7 @@ def forecast_for_city(city, start_date, models, forecast_profiles):
         ct_holidays=ct_holidays,
         steps=FORECAST_DAYS,
         target_start_date=start_date,
+        feature_artifacts=models['feature_artifacts'],
     )
 
 
@@ -448,25 +559,79 @@ def build_risk_context(models, lookups):
         'label_encoder': models['label_encoder'],
         'classifier_features': models['classifier_features'],
         'per_city_classifiers': models['per_city_classifiers'],
+        'feature_artifacts': models['feature_artifacts'],
     }
 
 
+def with_selected_city_forecasters(models, cities):
+    """Attach only the requested legacy city forecasters to the cached global models."""
+    if models['feature_artifacts'] is not None:
+        return models
+    index = load_per_city_index()
+    if index is None:
+        return models
+
+    selected = dict(models['per_city_forecasters'])
+    for city in cities:
+        if city in selected:
+            continue
+        city_model = load_split_city_model('forecasters', city)
+        if city_model is not None:
+            selected[city] = city_model
+    return {
+        **models,
+        'per_city_forecasters': selected,
+        'per_city_forecast_features': index.get(
+            'forecast_features', models['per_city_forecast_features']
+        ),
+    }
+
+
+def with_selected_city_classifiers(models, cities):
+    """Attach only requested legacy city classifiers, retaining statewide fallback."""
+    if models['feature_artifacts'] is not None:
+        return models
+    selected = dict(models['per_city_classifiers'])
+    for city in cities:
+        if city in selected:
+            continue
+        city_model = load_split_city_model('classifiers', city)
+        if city_model is not None:
+            selected[city] = city_model
+    return {**models, 'per_city_classifiers': selected}
+
+
 with st.spinner("Booting up system..."):
-    models = load_models()
-    raw_df = load_data()
-    ts_data = get_aggregate_data(raw_df)
-    officer_raw_data = get_officer_trends(raw_df)
-    lookups = build_lookup_tables(raw_df)
+    forecast_models = load_forecast_models()
+    app_data_bundle = load_app_data_bundle()
+    if (
+        app_data_bundle is not None
+        and forecast_models['feature_artifacts'] is not None
+        and str(app_data_bundle['model_version'])
+        != str(forecast_models['feature_artifacts'].get('model_version'))
+    ):
+        app_data_bundle = None
+    if app_data_bundle is not None:
+        ts_data = app_data_bundle['daily_city']
+        officer_raw_data = app_data_bundle['officer_trends']
+        crime_distribution_data = app_data_bundle['crime_distribution']
+        lookups = build_bundle_lookup_tables(app_data_bundle)
+        available_years = sorted(app_data_bundle['years'], reverse=True)
+    else:
+        raw_df = load_data()
+        ts_data = get_aggregate_data(raw_df)
+        officer_raw_data = get_officer_trends(raw_df)
+        crime_distribution_data = raw_df
+        lookups = build_lookup_tables(raw_df, include_legacy=forecast_models['feature_artifacts'] is None)
+        available_years = sorted(raw_df['year'].unique(), reverse=True)
     forecast_profiles = build_forecast_profiles(ts_data)
 
-if models['optional_warnings']:
-    for warning in models['optional_warnings']:
+if forecast_models['optional_warnings']:
+    for warning in forecast_models['optional_warnings']:
         st.warning(warning)
 
-cities = sorted(raw_df['city'].astype(str).unique())
-locations = sorted(raw_df['location_area'].astype(str).unique())
-available_years = sorted(raw_df['year'].unique(), reverse=True)
-risk_context = build_risk_context(models, lookups)
+cities = lookups['city_cats']
+locations = lookups['loc_cats']
 
 selected_city = st.sidebar.selectbox("Select City", cities, key="sb_city_select")
 compare_options = [city for city in cities if city != selected_city]
@@ -477,6 +642,7 @@ compare_cities = st.sidebar.multiselect(
     key="sidebar_compare_cities",
 )
 comparison_cities = [selected_city] + compare_cities
+forecast_models_for_selection = with_selected_city_forecasters(forecast_models, comparison_cities)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("**📍 Selected City Stats**")
@@ -496,11 +662,11 @@ with st.sidebar.expander("ℹ️ About ProjeCT 360"):
 
     **1. Volume Forecasting (Regression)**
     * **Function:** Estimates expected daily incident counts for the next 30 days using historical reporting data.
-    * **Reference Accuracy:** **~76.7%** on the global volume model.
+    * **Evaluation:** Assessed on chronological held-out dates after model training.
 
     **2. Risk Classification (Probability)**
     * **Function:** Shows probability distributions across broad and specific offense categories for a selected scenario.
-    * **Reference Accuracy:** **~48.2%** top-1 classification accuracy.
+    * **Evaluation:** Assessed with class-aware and probability-quality metrics on chronological held-out data.
 
     **3. Resource Analytics**
     * **Function:** Summarizes police staffing levels and demographic trends over time.
@@ -529,7 +695,9 @@ with tab1:
     with st.spinner("Calculating forecast..."):
         for city in forecast_cities:
             try:
-                city_forecast = forecast_for_city(city, target_start_date, models, forecast_profiles)
+                city_forecast = forecast_for_city(
+                    city, target_start_date, forecast_models_for_selection, forecast_profiles
+                )
             except Exception as exc:
                 report_tab_error(f"Volume forecast for {city}", exc)
                 missing_forecasts.append(city)
@@ -613,24 +781,35 @@ with tab2:
                 value=True,
                 key="risk_compare_selected_cities",
             )
+        calculate_risk = st.button("Calculate Risk", type="primary", key="risk_calculate_button")
 
     risk_cities = comparison_cities if compare_risk_cities else [selected_city]
     risk_results = {}
     risk_failures = []
-    with st.spinner("Calculating risk..."):
-        for city in risk_cities:
-            try:
-                risk_results[city] = predict_crime_risk(
-                    city,
-                    s_loc,
-                    s_loc_type,
-                    s_time,
-                    s_date,
-                    risk_context,
-                )
-            except Exception as exc:
-                logger.exception("Risk prediction failed for %s", city)
-                risk_failures.append(f"{city}: {exc}")
+    if calculate_risk:
+        with st.spinner("Loading risk models and calculating risk..."):
+            risk_models = load_risk_models()
+            risk_models = with_selected_city_classifiers(risk_models, risk_cities)
+            if risk_models['optional_warnings']:
+                for warning in risk_models['optional_warnings']:
+                    st.warning(warning)
+            risk_context = build_risk_context(risk_models, lookups)
+            for city in risk_cities:
+                try:
+                    risk_results[city] = predict_crime_risk(
+                        city,
+                        s_loc,
+                        s_loc_type,
+                        s_time,
+                        s_date,
+                        risk_context,
+                    )
+                except Exception as exc:
+                    logger.exception("Risk prediction failed for %s", city)
+                    risk_failures.append(f"{city}: {exc}")
+    else:
+        with c2:
+            st.info("Choose a date, time, and location, then click **Calculate Risk**.")
 
     if risk_failures:
         st.warning("Risk prediction unavailable for: " + "; ".join(risk_failures))
@@ -644,7 +823,7 @@ with tab2:
                 broad_frames.append(build_probability_frame(
                     city,
                     result,
-                    models['broad_label_encoder'],
+                    risk_models['broad_label_encoder'],
                     'broad_probs',
                     'broad_model_classes',
                     'Category',
@@ -652,7 +831,7 @@ with tab2:
                 specific_frames.append(build_probability_frame(
                     city,
                     result,
-                    models['label_encoder'],
+                    risk_models['label_encoder'],
                     'specific_probs',
                     'specific_model_classes',
                     'Crime Type',
@@ -723,17 +902,17 @@ with tab2:
     c_pie_title, c_pie_select = st.columns([3, 1])
     with c_pie_title:
         historical_title = selected_city
-        if 'compare_risk_cities' in locals() and compare_risk_cities and len(risk_results) > 1:
+        if compare_risk_cities and len(risk_results) > 1:
             historical_title = "selected cities"
         st.markdown(f"#### How does this compare historically? ({historical_title})")
     with c_pie_select:
         year_options = ["All Years"] + available_years
         selected_year = st.selectbox("Filter Year", year_options, key="pie_year_select")
 
-    historical_cities = risk_cities if 'compare_risk_cities' in locals() and compare_risk_cities else [selected_city]
+    historical_cities = risk_cities if compare_risk_cities else [selected_city]
     historical_frames = []
     for city in historical_cities:
-        city_dist = get_crime_distribution(raw_df, city, selected_year)
+        city_dist = get_crime_distribution(crime_distribution_data, city, selected_year)
         if city_dist is not None and not city_dist.empty:
             city_dist = city_dist.copy()
             city_dist['City'] = city
@@ -973,7 +1152,6 @@ with tab3:
                     fillcolor='rgba(255, 127, 14, 0.8)',
                     hovertemplate='<b>Female Officers</b><br>Count=%{y:,.0f}<extra></extra>',
                 ))
-                compact_gender_chart = len(gender_sections) > 1
                 fig_gender.update_layout(
                     title=chart_title,
                     xaxis=dict(
@@ -985,7 +1163,6 @@ with tab3:
                     ),
                     yaxis=dict(title="Officer Count", tickformat=",.0f"),
                     hovermode="x unified",
-                    height=380 if compact_gender_chart else None,
                 )
                 style_plotly_figure(fig_gender, theme)
                 st.plotly_chart(fig_gender, width='stretch')

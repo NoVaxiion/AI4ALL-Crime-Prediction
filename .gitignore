@@ -1,9 +1,22 @@
-.venv
-.vscode
-*evaluate_models.py.DS_Store
-*__pycache__/
+.venv/
+.vscode/
+.env
+.claude/
+.streamlit/secrets.toml
+.ipynb_checkpoints/
+gc_train_model (1).ipynb
+__pycache__/
+*/__pycache__/
 *.pyc
+*.log
+*.pkl
+*.joblib
+*.csv
+*.sqlite
+.pytest_cache/
 .DS_Store
-backtest_outputs/AI4ALL_Datasets_Backup.zip
+backtest_outputs/
+reports/
+AI4ALL_Datasets_Backup.zip
 Datasets/
 Models/

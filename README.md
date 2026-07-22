@@ -46,6 +46,7 @@ The Streamlit dashboard is organized into three main sections.
 - Supports comparing the selected city with up to two additional cities.
 - Marks holidays globally across all compared cities.
 - Uses global and optional per-city forecasting models when available.
+- Downloads indexed per-city models lazily for only the selected comparison cities, avoiding the old all-model startup allocation.
 
 ### Risk Analysis
 
@@ -66,17 +67,25 @@ The Streamlit dashboard is organized into three main sections.
 
 ## Methodology
 
-The project uses public Connecticut incident data and officer staffing context to train and support several model-driven views.
+The project uses public Connecticut incident data and officer staffing context to train and support several model-driven views. Model development uses chronological training, validation, and untouched final-test periods rather than random splitting.
 
 The current app uses:
 
-- feature engineering for date, seasonality, holidays, location context, city context, and staffing context
-- regression models for incident volume forecasting
-- classification models for broad and specific offense category probability estimates
+- shared leakage-safe feature engineering for date, seasonality, holidays, location context, and city context
+- complete city/date panels so forecast lags refer to earlier calendar days
+- app-aligned recursive 30-day validation in which predictions, never hidden holdout outcomes, feed later forecast days
+- validation-learned blending between the selected model and a seven-day rolling baseline, including a zero-model fallback when the model adds no value
+- training-only category vocabularies, rare-label decisions, and historical lookup tables
+- previous-complete-year handling for annual staffing, population, and rate fields
+- count-regression comparisons for incident volume forecasting
+- calibrated classification comparisons for broad and specific offense probability estimates
+- rolling-origin validation, meaningful baselines, and one untouched chronological test period used only after all choices are frozen
 - historical aggregation for city, location, officer, and offense-type comparisons
 - Streamlit and Plotly for interactive visualization
 
-Earlier research and experimentation included multiple modeling approaches, class imbalance handling, and model evaluation workflows. The final app focuses on the models and artifacts required for the current dashboard experience.
+The Colab notebook compares unsuccessful and successful experiments rather than reporting only the winning model. Final metrics are generated into the model manifest and reports; they are not hardcoded in the dashboard or README.
+
+For deployment, Hugging Face stores compact selected models and a summarized dashboard data bundle. The full incident-level dataset is not downloaded by Streamlit after version 2 artifacts are uploaded.
 
 ---
 
@@ -85,12 +94,20 @@ Earlier research and experimentation included multiple modeling approaches, clas
 ```text
 app.py              Streamlit user interface and charts
 data.py             Data loading, aggregation, and lookup-table helpers
-predict.py          Forecasting, feature engineering, and risk prediction helpers
+predict.py          Forecasting and risk inference helpers
+feature_engineering.py  Shared training/inference feature definitions
+training_pipeline.py    Evaluation, baseline, checkpoint, and manifest helpers
+scripts/split_per_city_assets.py  One-time splitter for memory-safe per-city deployment
+scripts/build_app_data_bundle.py  Compact replacement for the runtime incident CSV
+gc_train_model.ipynb    Google Colab training and untouched-test workflow
 requirements.txt    Python dependencies
-Models/             Runtime model and data artifacts
+requirements-train.txt  Additional Colab-only training dependencies
+Models/             Ignored local runtime artifacts; production assets use Hugging Face
 .streamlit/         Streamlit theme configuration
-tests/              Unit tests for forecast and feature-engineering logic
+tests/              Leakage, schema, deployment, and frontend-preservation tests
 ```
+
+The full leakage findings are documented in `LEAKAGE_AUDIT.md`. Responsible-use details are in `MODEL_CARD.md`, and Colab/Hugging Face instructions are in `DEPLOYMENT.md`.
 
 ---
 
