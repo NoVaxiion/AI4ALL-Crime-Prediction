@@ -87,6 +87,35 @@ CRIME_AXIS_LABELS = {
     "Burglary/Breaking & Entering": "Burglary / Breaking<br>& Entering",
 }
 REMAINING_OFFENSE_LABEL = "Remaining Offense Categories"
+HISTORICAL_OFFENSE_COLORS = {
+    "Animal Cruelty": "#9C755F",
+    "Arson": "#E76F51",
+    "Assault Offenses": "#F4CD68",
+    "Bribery": "#A978C4",
+    "Burglary/Breaking & Entering": "#EF7FAE",
+    "Counterfeiting/Forgery": "#8D6AB8",
+    "Destruction/Damage/Vandalism of Property": "#F49370",
+    "Drug/Narcotic Offenses": "#80C15C",
+    "Embezzlement": "#D4A72C",
+    "Extortion/Blackmail": "#6C757D",
+    "Fraud Offenses": "#C99BE8",
+    "Gambling Offenses": "#5F9EA0",
+    "Homicide Offenses": "#B56576",
+    "Human Trafficking": "#D37295",
+    "Kidnapping/Abduction": "#C1666B",
+    "Larceny/Theft Offenses": "#62C0C7",
+    "Motor Vehicle Theft": "#79A7E3",
+    "Other": "#7F7F7F",
+    "Pornography/Obscene Material": "#4BA3C7",
+    "Prostitution Offenses": "#B07AA1",
+    "Robbery": "#D95F59",
+    "Sex Offenses": "#4E79A7",
+    "Sex Offenses, Non-forcible": "#6B6ECF",
+    "Stolen Property Offenses": "#59A14F",
+    "Weapon Law Violations": "#B9D45E",
+    REMAINING_OFFENSE_LABEL: "#8B95A5",
+}
+COMPARISON_COLORS = ["#4C78A8", "#F58518", "#54A24B"]
 
 
 def use_readable_crime_axis_labels(fig, labels):
@@ -130,6 +159,14 @@ def group_remaining_offense_categories(distribution, top_n=8):
         .sum()
         .sort_values('Count', ascending=False)
     )
+
+
+def build_comparison_color_map(labels):
+    """Assign selected comparison labels stable colors for the current view."""
+    return {
+        label: COMPARISON_COLORS[index % len(COMPARISON_COLORS)]
+        for index, label in enumerate(labels)
+    }
 
 
 def use_horizontal_legend(fig, position="top"):
@@ -1058,7 +1095,8 @@ with tab2:
                 custom_data=['City'],
                 orientation='h',
                 barmode='group',
-                color_discrete_sequence=px.colors.qualitative.Set2,
+                color_discrete_map=build_comparison_color_map(historical_cities),
+                category_orders={'City': historical_cities},
             )
             fig_history.update_traces(hovertemplate='%{customdata[0]}<br>%{y}<br>Count=%{x:,}<extra></extra>')
             fig_history.update_layout(
@@ -1084,8 +1122,9 @@ with tab2:
                 dist_data,
                 values='Count',
                 names='Crime Type',
+                color='Crime Type',
                 hole=0.4,
-                color_discrete_sequence=px.colors.qualitative.Pastel,
+                color_discrete_map=HISTORICAL_OFFENSE_COLORS,
             )
             fig_pie.update_traces(
                 textposition='inside',
