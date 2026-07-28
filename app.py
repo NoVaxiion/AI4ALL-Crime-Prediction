@@ -79,6 +79,47 @@ def build_probability_frame(city, result, label_encoder, probs_key, classes_key,
     return pd.DataFrame(rows)
 
 
+CRIME_AXIS_LABELS = {
+    "Larceny/Theft Offenses": "Larceny / Theft Offenses",
+    "Counterfeiting/Forgery": "Counterfeiting / Forgery",
+    "Destruction/Damage/Vandalism of Property": "Destruction / Damage /<br>Vandalism of Property",
+    "Drug/Narcotic Offenses": "Drug / Narcotic Offenses",
+    "Burglary/Breaking & Entering": "Burglary / Breaking<br>& Entering",
+}
+
+
+def use_readable_crime_axis_labels(fig, labels):
+    """Wrap long category names without changing their underlying values or hover text."""
+    ordered_labels = list(dict.fromkeys(str(label) for label in labels))
+    fig.update_yaxes(
+        tickmode="array",
+        tickvals=ordered_labels,
+        ticktext=[CRIME_AXIS_LABELS.get(label, label) for label in ordered_labels],
+        title_text=None,
+        tickfont=dict(size=12),
+    )
+    return fig
+
+
+def use_horizontal_legend(fig, position="top"):
+    """Keep legends from taking away horizontal plotting space on narrow screens."""
+    if position == "bottom":
+        y, yanchor = -0.18, "top"
+    else:
+        y, yanchor = 1.02, "bottom"
+    fig.update_layout(
+        legend=dict(
+            orientation="h",
+            y=y,
+            yanchor=yanchor,
+            x=0,
+            xanchor="left",
+            title_text="",
+        )
+    )
+    return fig
+
+
 def apply_theme(theme_mode):
     if theme_mode == "Dark":
         colors = {
@@ -415,11 +456,14 @@ def build_probability_bar_chart(df, y_col, theme, show_legend):
     )
     fig.update_traces(hovertemplate='%{customdata[0]}<br>%{y}<br>Probability=%{x:.2%}<extra></extra>')
     fig.update_layout(
-        height=320,
+        height=340,
         showlegend=show_legend,
         xaxis_tickformat='.2%',
         yaxis={'categoryorder': 'total ascending'},
     )
+    use_readable_crime_axis_labels(fig, df[y_col])
+    if show_legend:
+        use_horizontal_legend(fig)
     style_plotly_figure(fig, theme)
     return fig
 
@@ -736,6 +780,9 @@ with tab1:
             hovertemplate='%{customdata[0]}<br>%{x|%b %d, %Y}<br>Predicted Count = %{y:.2f}<extra></extra>',
         )
         style_plotly_figure(fig, theme)
+        if len(forecast_cities) > 1:
+            use_horizontal_legend(fig, position="bottom")
+            fig.update_layout(margin=dict(l=16, r=16, t=56, b=88))
 
         holiday_points = forecast_df[forecast_df['is_holiday'] == 1]
         if not holiday_points.empty:
@@ -964,10 +1011,12 @@ with tab2:
             )
             fig_history.update_traces(hovertemplate='%{customdata[0]}<br>%{y}<br>Count=%{x:,}<extra></extra>')
             fig_history.update_layout(
-                height=520,
+                height=560,
                 xaxis_title='Reported Incidents',
                 yaxis={'categoryorder': 'total ascending'},
             )
+            use_readable_crime_axis_labels(fig_history, dist_data['Crime Type'])
+            use_horizontal_legend(fig_history)
             style_plotly_figure(fig_history, theme)
             st.plotly_chart(fig_history, width='stretch')
         except Exception as exc:
@@ -982,9 +1031,15 @@ with tab2:
                 hole=0.4,
                 color_discrete_sequence=px.colors.qualitative.Pastel,
             )
-            fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-            fig_pie.update_layout(showlegend=True, height=500)
+            fig_pie.update_traces(
+                textposition='inside',
+                textinfo='percent',
+                hovertemplate='%{label}<br>Count=%{value:,}<br>Share=%{percent}<extra></extra>',
+            )
+            fig_pie.update_layout(showlegend=True, height=620)
+            use_horizontal_legend(fig_pie, position="bottom")
             style_plotly_figure(fig_pie, theme)
+            fig_pie.update_layout(margin=dict(l=8, r=8, t=24, b=210))
             st.plotly_chart(fig_pie, width='stretch')
         except Exception as exc:
             report_tab_error("Historical distribution chart", exc)
@@ -1068,6 +1123,9 @@ with tab3:
                 hovertemplate='%{y:,.0f} Officers<extra></extra>',
             )
         style_plotly_figure(fig_total, theme)
+        if officer_view_mode == "City-Specific" and len(trend_cities) > 1:
+            use_horizontal_legend(fig_total, position="bottom")
+            fig_total.update_layout(margin=dict(l=16, r=16, t=56, b=96))
         st.plotly_chart(fig_total, width='stretch')
 
         st.divider()
@@ -1162,7 +1220,8 @@ with tab3:
                 margin=dict(t=152, b=96, l=16, r=16),
             )
             style_plotly_figure(fig_gender, theme)
-            fig_gender.update_layout(margin=dict(t=152, b=96, l=16, r=16))
+            use_horizontal_legend(fig_gender, position="bottom")
+            fig_gender.update_layout(margin=dict(t=152, b=132, l=16, r=16))
             st.plotly_chart(fig_gender, width='stretch')
         else:
             for city in gender_sections:
@@ -1196,6 +1255,7 @@ with tab3:
                 ))
                 fig_gender.update_layout(
                     title=chart_title,
+                    height=500,
                     xaxis=dict(
                         tickformat="%Y",
                         dtick="M12",
@@ -1207,6 +1267,8 @@ with tab3:
                     hovermode="x unified",
                 )
                 style_plotly_figure(fig_gender, theme)
+                use_horizontal_legend(fig_gender, position="bottom")
+                fig_gender.update_layout(margin=dict(l=16, r=16, t=56, b=104))
                 st.plotly_chart(fig_gender, width='stretch')
 
         st.divider()
