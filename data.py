@@ -239,30 +239,47 @@ def get_officer_trends(_df):
     ].drop_duplicates()
 
 
+def _filter_crime_history(df, city, year_filter):
+    """Filter historical incident rows or aggregates to one scope and year."""
+    selected_crimes = df if city is None else df[df['city'] == city]
+    if year_filter != 'All Years':
+        if 'year' in selected_crimes:
+            selected_crimes = selected_crimes[selected_crimes['year'] == int(year_filter)]
+        else:
+            selected_crimes = selected_crimes[selected_crimes['date'].dt.year == int(year_filter)]
+    return selected_crimes
+
+
 @st.cache_data
 def get_crime_distribution(_df, city, year_filter):
-    """Get historical crime type distribution for the pie chart, optionally filtered by year."""
-    city_crimes = _df[_df['city'] == city]
-    if year_filter != 'All Years':
-        if 'year' in city_crimes:
-            city_crimes = city_crimes[city_crimes['year'] == int(year_filter)]
-        else:
-            city_crimes = city_crimes[city_crimes['date'].dt.year == int(year_filter)]
-    if city_crimes.empty:
+    """Get city or statewide crime-type distribution, optionally filtered by year."""
+    selected_crimes = _filter_crime_history(_df, city, year_filter)
+    if selected_crimes.empty:
         return None
 
-    if 'count' in city_crimes:
+    if 'count' in selected_crimes:
         dist = (
-            city_crimes.groupby('offense_category_name', observed=True)['count']
+            selected_crimes.groupby('offense_category_name', observed=True)['count']
             .sum()
             .sort_values(ascending=False)
             .reset_index()
         )
         dist.columns = ['Crime Type', 'Count']
     else:
-        dist = city_crimes['offense_category_name'].value_counts().reset_index()
+        dist = selected_crimes['offense_category_name'].value_counts().reset_index()
         dist.columns = ['Crime Type', 'Count']
     return dist[dist['Count'] > 0].head(8)
+
+
+@st.cache_data
+def get_crime_total(_df, city, year_filter):
+    """Return the complete incident total for a city or the state."""
+    selected_crimes = _filter_crime_history(_df, city, year_filter)
+    if selected_crimes.empty:
+        return 0
+    if 'count' in selected_crimes:
+        return int(selected_crimes['count'].sum())
+    return int(len(selected_crimes))
 
 
 @st.cache_resource

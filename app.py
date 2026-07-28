@@ -22,6 +22,7 @@ from data import (
     build_lookup_tables,
     get_aggregate_data,
     get_crime_distribution,
+    get_crime_total,
     get_officer_trends,
     is_lfs_pointer,
     load_app_data_bundle,
@@ -808,24 +809,44 @@ with tab2:
                     report_tab_error("Specific offense risk chart", exc)
 
     st.divider()
-    c_pie_title, c_pie_select = st.columns([3, 1])
-    with c_pie_title:
-        historical_title = selected_city
-        if compare_risk_cities and len(risk_results) > 1:
-            historical_title = "selected cities"
-        st.markdown(f"#### How does this compare historically? ({historical_title})")
+    c_history_mode, c_pie_select = st.columns([3, 1])
+    with c_history_mode:
+        historical_view_mode = st.radio(
+            "View Mode:",
+            ["Statewide", "City-Specific"],
+            horizontal=True,
+            key="risk_historical_view_mode",
+        )
     with c_pie_select:
         year_options = ["All Years"] + available_years
         selected_year = st.selectbox("Filter Year", year_options, key="pie_year_select")
 
     historical_cities = risk_cities if compare_risk_cities else [selected_city]
-    historical_frames = []
-    for city in historical_cities:
-        city_dist = get_crime_distribution(crime_distribution_data, city, selected_year)
-        if city_dist is not None and not city_dist.empty:
-            city_dist = city_dist.copy()
-            city_dist['City'] = city
-            historical_frames.append(city_dist)
+    if historical_view_mode == "Statewide":
+        st.markdown("#### How does this compare historically? (Statewide)")
+        statewide_dist = get_crime_distribution(crime_distribution_data, None, selected_year)
+        historical_frames = [statewide_dist] if statewide_dist is not None and not statewide_dist.empty else []
+        historical_scope = "Statewide"
+        historical_totals = {
+            "Statewide": get_crime_total(crime_distribution_data, None, selected_year)
+        }
+    else:
+        if len(historical_cities) == 1:
+            st.markdown(f"#### How does this compare historically? ({historical_cities[0]})")
+        else:
+            st.markdown("#### How does this compare historically?")
+        historical_frames = []
+        for city in historical_cities:
+            city_dist = get_crime_distribution(crime_distribution_data, city, selected_year)
+            if city_dist is not None and not city_dist.empty:
+                city_dist = city_dist.copy()
+                city_dist['City'] = city
+                historical_frames.append(city_dist)
+        historical_scope = ", ".join(historical_cities)
+        historical_totals = {
+            city: get_crime_total(crime_distribution_data, city, selected_year)
+            for city in historical_cities
+        }
 
     if historical_frames and len(historical_frames) > 1:
         dist_data = pd.concat(historical_frames, ignore_index=True)
@@ -867,7 +888,18 @@ with tab2:
         except Exception as exc:
             report_tab_error("Historical distribution chart", exc)
     else:
-        st.info(f"No historical distribution data available for {', '.join(historical_cities)} in {selected_year}.")
+        st.info(f"No historical distribution data available for {historical_scope} in {selected_year}.")
+
+    st.divider()
+    if historical_view_mode == "Statewide":
+        st.markdown("### Historical Incident Total: Statewide")
+    else:
+        st.markdown("### Historical Incident Totals by City")
+
+    total_columns = st.columns(len(historical_totals))
+    for column, (scope, total) in zip(total_columns, historical_totals.items()):
+        column.metric(f"{scope} Reported Incidents", f"{total:,}")
+    st.caption(f"Historical period: {selected_year}")
 
 with tab3:
     st.subheader("Police Force Analysis")
