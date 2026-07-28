@@ -86,7 +86,6 @@ CRIME_AXIS_LABELS = {
     "Drug/Narcotic Offenses": "Drug / Narcotic Offenses",
     "Burglary/Breaking & Entering": "Burglary / Breaking<br>& Entering",
 }
-REMAINING_OFFENSE_LABEL = "Remaining Offense Categories"
 SPECIFIC_MODEL_CATEGORIES = [
     "Assault Offenses",
     "Burglary/Breaking & Entering",
@@ -103,32 +102,19 @@ SPECIFIC_MODEL_CATEGORIES = [
     "Weapon Law Violations",
 ]
 HISTORICAL_OFFENSE_COLORS = {
-    "Animal Cruelty": "#9C755F",
-    "Arson": "#E76F51",
     "Assault Offenses": "#F4CD68",
-    "Bribery": "#A978C4",
     "Burglary/Breaking & Entering": "#EF7FAE",
     "Counterfeiting/Forgery": "#8D6AB8",
     "Destruction/Damage/Vandalism of Property": "#F49370",
     "Drug/Narcotic Offenses": "#80C15C",
-    "Embezzlement": "#D4A72C",
-    "Extortion/Blackmail": "#6C757D",
     "Fraud Offenses": "#C99BE8",
-    "Gambling Offenses": "#5F9EA0",
-    "Homicide Offenses": "#B56576",
-    "Human Trafficking": "#D37295",
-    "Kidnapping/Abduction": "#C1666B",
     "Larceny/Theft Offenses": "#62C0C7",
     "Motor Vehicle Theft": "#79A7E3",
     "Other": "#7F7F7F",
-    "Pornography/Obscene Material": "#4BA3C7",
-    "Prostitution Offenses": "#B07AA1",
     "Robbery": "#D95F59",
     "Sex Offenses": "#4E79A7",
-    "Sex Offenses, Non-forcible": "#6B6ECF",
     "Stolen Property Offenses": "#59A14F",
     "Weapon Law Violations": "#B9D45E",
-    REMAINING_OFFENSE_LABEL: "#8B95A5",
 }
 COMPARISON_COLORS = ["#4C78A8", "#F58518", "#54A24B"]
 
@@ -146,34 +132,103 @@ def use_readable_crime_axis_labels(fig, labels):
     return fig
 
 
-def group_remaining_offense_categories(distribution, top_n=8):
-    """Keep the largest shared categories and preserve every other incident in one group."""
+def align_historical_model_categories(distribution):
+    """Aggregate raw FBI categories into the classifier's complete 13-class taxonomy."""
     if distribution.empty:
         return distribution
 
-    category_totals = (
-        distribution.groupby('Crime Type', observed=True)['Count']
-        .sum()
-        .sort_values(ascending=False)
-    )
-    if len(category_totals) <= top_n:
-        return distribution
-
-    top_categories = set(category_totals.head(top_n).index)
-    grouped = distribution.copy()
-    grouped['Crime Type'] = grouped['Crime Type'].astype(str)
-    grouped['Crime Type'] = grouped['Crime Type'].where(
-        grouped['Crime Type'].isin(top_categories),
-        REMAINING_OFFENSE_LABEL,
+    aligned = distribution.copy()
+    aligned['Crime Type'] = aligned['Crime Type'].astype(str)
+    aligned['Crime Type'] = aligned['Crime Type'].where(
+        aligned['Crime Type'].isin(SPECIFIC_MODEL_CATEGORIES),
+        'Other',
     )
     group_columns = ['Crime Type']
-    if 'City' in grouped:
+    city_order = []
+    if 'City' in aligned:
+        aligned['City'] = aligned['City'].astype(str)
+        city_order = list(dict.fromkeys(aligned['City']))
         group_columns.insert(0, 'City')
-    return (
-        grouped.groupby(group_columns, as_index=False, observed=True)['Count']
-        .sum()
-        .sort_values('Count', ascending=False)
+
+    aligned = aligned.groupby(
+        group_columns, as_index=False, observed=True
+    )['Count'].sum()
+    if city_order:
+        full_index = pd.MultiIndex.from_product(
+            [city_order, SPECIFIC_MODEL_CATEGORIES],
+            names=['City', 'Crime Type'],
+        )
+        aligned = (
+            aligned.set_index(['City', 'Crime Type'])
+            .reindex(full_index, fill_value=0)
+            .reset_index()
+        )
+    else:
+        aligned = (
+            aligned.set_index('Crime Type')
+            .reindex(SPECIFIC_MODEL_CATEGORIES, fill_value=0)
+            .rename_axis('Crime Type')
+            .reset_index()
+        )
+    aligned['Count'] = aligned['Count'].astype(int)
+    return aligned
+
+
+def render_historical_category_counts(distribution):
+    """Render filter-aware counts for every specific classifier category."""
+    st.markdown("##### Reported incidents across all 13 model categories")
+    city_order = (
+        list(dict.fromkeys(distribution['City']))
+        if 'City' in distribution
+        else []
     )
+    if len(city_order) > 1:
+        count_table = (
+            distribution.pivot(index='Crime Type', columns='City', values='Count')
+            .reindex(index=SPECIFIC_MODEL_CATEGORIES, columns=city_order, fill_value=0)
+            .fillna(0)
+            .astype(int)
+        )
+        count_table['Total'] = count_table.sum(axis=1)
+        count_table = count_table.reset_index()
+        numeric_columns = city_order + ['Total']
+        column_config = {
+            'Crime Type': st.column_config.TextColumn(
+                'Category', width='medium'
+            ),
+            **{
+                column: st.column_config.NumberColumn(
+                    column, format="localized", width='small'
+                )
+                for column in numeric_columns
+            },
+        }
+    else:
+        count_table = distribution[['Crime Type', 'Count']].copy()
+        total_count = int(count_table['Count'].sum())
+        count_table['Share (%)'] = (
+            count_table['Count'] / total_count * 100 if total_count else 0.0
+        )
+        column_config = {
+            'Crime Type': st.column_config.TextColumn(
+                'Category', width='medium'
+            ),
+            'Count': st.column_config.NumberColumn(
+                'Count', format="localized", width='small'
+            ),
+            'Share (%)': st.column_config.NumberColumn(
+                'Share', format="%.2f%%", width='small'
+            ),
+        }
+
+    st.dataframe(
+        count_table,
+        column_config=column_config,
+        hide_index=True,
+        use_container_width=True,
+        height=500,
+    )
+    st.caption("Counts update with the selected view mode and year.")
 
 
 def build_comparison_color_map(labels):
@@ -788,10 +843,7 @@ for city in comparison_cities:
         st.caption(f"Officer Rate: {city_stats_row['officers_per_1000_people']:.2f} per 1k")
 
 with st.sidebar.expander("How Offenses Are Grouped"):
-    specific_category_list = "\n".join(
-        f"- {category}" for category in SPECIFIC_MODEL_CATEGORIES
-    )
-    st.markdown(f"""
+    st.markdown("""
     Detailed offense labels use the broader category supplied in the FBI incident data.
 
     **Examples**
@@ -804,12 +856,16 @@ with st.sidebar.expander("How Offenses Are Grouped"):
     - **Violent:** Assault Offenses, Sex Offenses, and Robbery
     - **Property:** Larceny/Theft, Burglary, Motor Vehicle Theft, and Stolen Property
     - **Other:** All remaining categories, including fraud, drug offenses, vandalism, and weapon violations
-
-    **Specific model categories (13)**
-    {specific_category_list}
-
-    Infrequent categories were combined into **Other** during model training. These labels describe reported incident classifications and may include inconsistencies from the source data.
     """)
+    st.markdown(
+        "**Specific model categories (13)**\n\n"
+        + "\n".join(f"- {category}" for category in SPECIFIC_MODEL_CATEGORIES)
+    )
+    st.markdown(
+        "Infrequent categories were combined into **Other** during model training. "
+        "These labels describe reported incident classifications and may include "
+        "inconsistencies from the source data."
+    )
 
 with st.sidebar.expander("ℹ️ About ProjeCT 360"):
     st.markdown("""
@@ -1107,8 +1163,9 @@ with tab2:
             for city in historical_cities
         }
 
+    dist_data = None
     if historical_frames and len(historical_frames) > 1:
-        dist_data = group_remaining_offense_categories(
+        dist_data = align_historical_model_categories(
             pd.concat(historical_frames, ignore_index=True)
         )
         try:
@@ -1133,15 +1190,10 @@ with tab2:
             use_horizontal_legend(fig_history)
             style_plotly_figure(fig_history, theme)
             st.plotly_chart(fig_history, width='stretch')
-            if REMAINING_OFFENSE_LABEL in set(dist_data['Crime Type']):
-                st.caption(
-                    "The eight largest categories are shown individually. "
-                    "Every remaining reported offense is included in Remaining Offense Categories."
-                )
         except Exception as exc:
             report_tab_error("Historical comparison chart", exc)
     elif historical_frames:
-        dist_data = group_remaining_offense_categories(historical_frames[0])
+        dist_data = align_historical_model_categories(historical_frames[0])
         try:
             fig_pie = px.pie(
                 dist_data,
@@ -1151,9 +1203,16 @@ with tab2:
                 hole=0.4,
                 color_discrete_map=HISTORICAL_OFFENSE_COLORS,
             )
+            pie_total = int(dist_data['Count'].sum())
             fig_pie.update_traces(
                 textposition='inside',
-                textinfo='percent',
+                text=[
+                    f"{count / pie_total:.1%}"
+                    if pie_total and count / pie_total >= 0.02
+                    else ""
+                    for count in dist_data['Count']
+                ],
+                textinfo='text',
                 hovertemplate='%{label}<br>Count=%{value:,}<br>Share=%{percent}<extra></extra>',
             )
             fig_pie.update_layout(showlegend=True, height=620)
@@ -1161,15 +1220,16 @@ with tab2:
             style_plotly_figure(fig_pie, theme)
             fig_pie.update_layout(margin=dict(l=8, r=8, t=24, b=210))
             st.plotly_chart(fig_pie, width='stretch')
-            if REMAINING_OFFENSE_LABEL in set(dist_data['Crime Type']):
-                st.caption(
-                    "The eight largest categories are shown individually. "
-                    "Every remaining reported offense is included in Remaining Offense Categories."
-                )
         except Exception as exc:
             report_tab_error("Historical distribution chart", exc)
     else:
         st.info(f"No historical distribution data available for {historical_scope} in {selected_year}.")
+
+    if dist_data is not None:
+        st.caption(
+            "Historical incidents use the same 13-category grouping as the specific classifier."
+        )
+        render_historical_category_counts(dist_data)
 
     st.divider()
     if historical_view_mode == "Statewide":
