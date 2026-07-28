@@ -86,6 +86,7 @@ CRIME_AXIS_LABELS = {
     "Drug/Narcotic Offenses": "Drug / Narcotic Offenses",
     "Burglary/Breaking & Entering": "Burglary / Breaking<br>& Entering",
 }
+REMAINING_OFFENSE_LABEL = "Remaining Offense Categories"
 
 
 def use_readable_crime_axis_labels(fig, labels):
@@ -99,6 +100,36 @@ def use_readable_crime_axis_labels(fig, labels):
         tickfont=dict(size=12),
     )
     return fig
+
+
+def group_remaining_offense_categories(distribution, top_n=8):
+    """Keep the largest shared categories and preserve every other incident in one group."""
+    if distribution.empty:
+        return distribution
+
+    category_totals = (
+        distribution.groupby('Crime Type', observed=True)['Count']
+        .sum()
+        .sort_values(ascending=False)
+    )
+    if len(category_totals) <= top_n:
+        return distribution
+
+    top_categories = set(category_totals.head(top_n).index)
+    grouped = distribution.copy()
+    grouped['Crime Type'] = grouped['Crime Type'].astype(str)
+    grouped['Crime Type'] = grouped['Crime Type'].where(
+        grouped['Crime Type'].isin(top_categories),
+        REMAINING_OFFENSE_LABEL,
+    )
+    group_columns = ['Crime Type']
+    if 'City' in grouped:
+        group_columns.insert(0, 'City')
+    return (
+        grouped.groupby(group_columns, as_index=False, observed=True)['Count']
+        .sum()
+        .sort_values('Count', ascending=False)
+    )
 
 
 def use_horizontal_legend(fig, position="top"):
@@ -1015,7 +1046,9 @@ with tab2:
         }
 
     if historical_frames and len(historical_frames) > 1:
-        dist_data = pd.concat(historical_frames, ignore_index=True)
+        dist_data = group_remaining_offense_categories(
+            pd.concat(historical_frames, ignore_index=True)
+        )
         try:
             fig_history = px.bar(
                 dist_data,
@@ -1037,10 +1070,15 @@ with tab2:
             use_horizontal_legend(fig_history)
             style_plotly_figure(fig_history, theme)
             st.plotly_chart(fig_history, width='stretch')
+            if REMAINING_OFFENSE_LABEL in set(dist_data['Crime Type']):
+                st.caption(
+                    "The eight largest categories are shown individually. "
+                    "Every remaining reported offense is included in Remaining Offense Categories."
+                )
         except Exception as exc:
             report_tab_error("Historical comparison chart", exc)
     elif historical_frames:
-        dist_data = historical_frames[0]
+        dist_data = group_remaining_offense_categories(historical_frames[0])
         try:
             fig_pie = px.pie(
                 dist_data,
@@ -1059,6 +1097,11 @@ with tab2:
             style_plotly_figure(fig_pie, theme)
             fig_pie.update_layout(margin=dict(l=8, r=8, t=24, b=210))
             st.plotly_chart(fig_pie, width='stretch')
+            if REMAINING_OFFENSE_LABEL in set(dist_data['Crime Type']):
+                st.caption(
+                    "The eight largest categories are shown individually. "
+                    "Every remaining reported offense is included in Remaining Offense Categories."
+                )
         except Exception as exc:
             report_tab_error("Historical distribution chart", exc)
     else:

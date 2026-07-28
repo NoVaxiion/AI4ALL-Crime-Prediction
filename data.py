@@ -252,7 +252,7 @@ def _filter_crime_history(df, city, year_filter):
 
 @st.cache_data
 def get_crime_distribution(_df, city, year_filter):
-    """Get city or statewide crime-type distribution, optionally filtered by year."""
+    """Get the complete city or statewide crime-type distribution."""
     selected_crimes = _filter_crime_history(_df, city, year_filter)
     if selected_crimes.empty:
         return None
@@ -268,7 +268,7 @@ def get_crime_distribution(_df, city, year_filter):
     else:
         dist = selected_crimes['offense_category_name'].value_counts().reset_index()
         dist.columns = ['Crime Type', 'Count']
-    return dist[dist['Count'] > 0].head(8)
+    return dist[dist['Count'] > 0]
 
 
 @st.cache_data
