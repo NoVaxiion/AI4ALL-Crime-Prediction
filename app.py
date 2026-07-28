@@ -964,7 +964,10 @@ with tab1:
         metric_cols = st.columns(len(forecast_cities))
         for i, city in enumerate(forecast_cities):
             city_total = forecast_df.loc[forecast_df['City'] == city, 'Predicted Count'].sum()
-            metric_cols[i].metric(f"{city} Total", f"{round(city_total):,} Crimes")
+            metric_cols[i].metric(
+                f"{city} Total",
+                f"{round(city_total):,} predicted crimes",
+            )
     else:
         st.error("Insufficient data.")
 
