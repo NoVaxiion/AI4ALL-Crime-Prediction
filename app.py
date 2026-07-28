@@ -55,7 +55,7 @@ def render_risk_summary_card(label, value, probability):
         <div class="risk-summary-card">
             <div class="risk-summary-label">{escape(str(label))}</div>
             <div class="risk-summary-value">{escape(str(value))}</div>
-            <div class="risk-summary-probability">↑ {probability:.2%}</div>
+            <div class="risk-summary-probability">Model probability: {probability:.2%}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -173,17 +173,111 @@ def apply_theme(theme_mode):
             word-break: normal;
         }}
         .risk-summary-probability {{
-            display: inline-block;
-            background-color: rgba(187, 247, 208, 0.8);
-            color: #052E16;
-            border-radius: 999px;
+            color: {colors["muted"]};
             font-size: 0.95rem;
+            font-weight: 600;
             margin-top: 0.75rem;
-            padding: 0.25rem 0.55rem;
         }}
         @media (max-width: 900px) {{
             .risk-summary-value {{
                 font-size: 1.6rem;
+            }}
+        }}
+        @media (max-width: 768px) {{
+            [data-testid="stMain"] {{
+                overflow-x: hidden;
+            }}
+            [data-testid="stMainBlockContainer"] {{
+                max-width: 100%;
+                padding: 1rem 0.75rem 4rem;
+            }}
+            [data-testid="stMainBlockContainer"] h1 {{
+                font-size: 2.15rem !important;
+                line-height: 1.15 !important;
+            }}
+            [data-testid="stMainBlockContainer"] h2 {{
+                font-size: 1.55rem !important;
+                line-height: 1.25 !important;
+            }}
+            [data-testid="stMainBlockContainer"] h3 {{
+                font-size: 1.25rem !important;
+                line-height: 1.3 !important;
+            }}
+            [data-testid="stMainBlockContainer"] h4 {{
+                font-size: 1.05rem !important;
+                line-height: 1.35 !important;
+            }}
+            [data-testid="stHorizontalBlock"] {{
+                flex-wrap: wrap !important;
+                gap: 0.75rem !important;
+            }}
+            [data-testid="stHorizontalBlock"] > [data-testid="stColumn"],
+            [data-testid="stHorizontalBlock"] > [data-testid="column"] {{
+                flex: 1 1 100% !important;
+                min-width: 100% !important;
+                width: 100% !important;
+            }}
+            .stTabs [data-baseweb="tab-list"] {{
+                gap: 0;
+                overflow: visible;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                flex: 1 1 0;
+                justify-content: center;
+                min-width: 0;
+                padding: 0.5rem 0.2rem;
+                white-space: nowrap;
+            }}
+            .stTabs [data-baseweb="tab"] p {{
+                font-size: 0.78rem !important;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }}
+            .stButton > button {{
+                min-height: 2.75rem;
+                width: 100%;
+            }}
+            div[data-testid="stMetric"] {{
+                min-height: 0;
+                width: 100%;
+            }}
+            div[data-testid="stMetric"] [data-testid="stMetricValue"] {{
+                font-size: 1.65rem !important;
+                overflow-wrap: anywhere;
+            }}
+            .risk-summary-card {{
+                min-height: 0;
+                padding: 0.875rem;
+            }}
+            .risk-summary-value {{
+                font-size: 1.65rem;
+            }}
+            [data-testid="stMarkdownContainer"],
+            [data-testid="stMarkdownContainer"] p,
+            [data-testid="stMarkdownContainer"] li {{
+                overflow-wrap: anywhere;
+            }}
+            [data-testid="stPlotlyChart"],
+            [data-testid="stPlotlyChart"] > div,
+            [data-testid="stPlotlyChart"] .js-plotly-plot,
+            [data-testid="stPlotlyChart"] .plot-container {{
+                max-width: 100% !important;
+                min-width: 0 !important;
+                width: 100% !important;
+            }}
+            [data-testid="stPlotlyChart"] .modebar {{
+                display: none !important;
+            }}
+            [data-testid="stPlotlyChart"] .gtitle {{
+                font-size: 0.9rem !important;
+            }}
+            [data-testid="stPlotlyChart"] .legendtext {{
+                font-size: 0.75rem !important;
+            }}
+            div[data-baseweb="select"],
+            div[data-baseweb="base-input"] {{
+                width: 100%;
             }}
         }}
         div[data-baseweb="select"] > div,
@@ -295,12 +389,14 @@ def style_plotly_figure(fig, theme):
         gridcolor=theme["grid"],
         zerolinecolor=theme["grid"],
         title_font=dict(color=theme["text"]),
+        automargin=True,
     )
     fig.update_yaxes(
         color=theme["text"],
         gridcolor=theme["grid"],
         zerolinecolor=theme["grid"],
         title_font=dict(color=theme["text"]),
+        automargin=True,
     )
     return fig
 
@@ -636,6 +732,7 @@ with tab1:
         )
         fig.update_traces(
             line_width=3,
+            showlegend=len(forecast_cities) > 1,
             hovertemplate='%{customdata[0]}<br>%{x|%b %d, %Y}<br>Predicted Count = %{y:.2f}<extra></extra>',
         )
         style_plotly_figure(fig, theme)
@@ -778,6 +875,10 @@ with tab2:
                     primary_risk_result['specific_label'],
                     primary_risk_result['specific_probability'],
                 )
+            st.caption(
+                "These probabilities classify a hypothetical reported incident; "
+                "they do not estimate whether an incident will occur."
+            )
 
         if risk_charts_available:
             st.divider()
