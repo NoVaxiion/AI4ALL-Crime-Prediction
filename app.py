@@ -704,6 +704,24 @@ for city in comparison_cities:
         st.metric("👥 Population", f"{int(city_stats_row['population']):,}")
         st.caption(f"Officer Rate: {city_stats_row['officers_per_1000_people']:.2f} per 1k")
 
+with st.sidebar.expander("How Offenses Are Grouped"):
+    st.markdown("""
+    Detailed offense labels use the broader category supplied in the FBI incident data.
+
+    **Examples**
+    - Shoplifting, pocket-picking, and theft from a motor vehicle → **Larceny/Theft Offenses**
+    - Aggravated assault, simple assault, and intimidation → **Assault Offenses**
+    - Drug/narcotic and drug-equipment violations → **Drug/Narcotic Offenses**
+    - Identity theft, card/ATM fraud, hacking, and wire fraud → **Fraud Offenses**
+
+    **Broad risk categories**
+    - **Violent:** Assault Offenses, Sex Offenses, and Robbery
+    - **Property:** Larceny/Theft, Burglary, Motor Vehicle Theft, and Stolen Property
+    - **Other:** All remaining categories, including fraud, drug offenses, vandalism, and weapon violations
+
+    Infrequent categories were combined into **Other** during model training. These labels describe reported incident classifications and may include inconsistencies from the source data.
+    """)
+
 with st.sidebar.expander("ℹ️ About ProjeCT 360"):
     st.markdown("""
     **CT Crime ProjeCT 360** is an educational analytics dashboard that explores historical Connecticut incident-reporting patterns, staffing context, and model-generated estimates.
