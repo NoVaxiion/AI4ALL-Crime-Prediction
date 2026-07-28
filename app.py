@@ -87,6 +87,21 @@ CRIME_AXIS_LABELS = {
     "Burglary/Breaking & Entering": "Burglary / Breaking<br>& Entering",
 }
 REMAINING_OFFENSE_LABEL = "Remaining Offense Categories"
+SPECIFIC_MODEL_CATEGORIES = [
+    "Assault Offenses",
+    "Burglary/Breaking & Entering",
+    "Counterfeiting/Forgery",
+    "Destruction/Damage/Vandalism of Property",
+    "Drug/Narcotic Offenses",
+    "Fraud Offenses",
+    "Larceny/Theft Offenses",
+    "Motor Vehicle Theft",
+    "Other",
+    "Robbery",
+    "Sex Offenses",
+    "Stolen Property Offenses",
+    "Weapon Law Violations",
+]
 HISTORICAL_OFFENSE_COLORS = {
     "Animal Cruelty": "#9C755F",
     "Arson": "#E76F51",
@@ -773,7 +788,10 @@ for city in comparison_cities:
         st.caption(f"Officer Rate: {city_stats_row['officers_per_1000_people']:.2f} per 1k")
 
 with st.sidebar.expander("How Offenses Are Grouped"):
-    st.markdown("""
+    specific_category_list = "\n".join(
+        f"- {category}" for category in SPECIFIC_MODEL_CATEGORIES
+    )
+    st.markdown(f"""
     Detailed offense labels use the broader category supplied in the FBI incident data.
 
     **Examples**
@@ -786,6 +804,9 @@ with st.sidebar.expander("How Offenses Are Grouped"):
     - **Violent:** Assault Offenses, Sex Offenses, and Robbery
     - **Property:** Larceny/Theft, Burglary, Motor Vehicle Theft, and Stolen Property
     - **Other:** All remaining categories, including fraud, drug offenses, vandalism, and weapon violations
+
+    **Specific model categories (13)**
+    {specific_category_list}
 
     Infrequent categories were combined into **Other** during model training. These labels describe reported incident classifications and may include inconsistencies from the source data.
     """)
@@ -898,6 +919,10 @@ with tab2:
     st.subheader("Crime Type Probability & Analysis")
     st.caption(
         "Educational use only: outputs reflect historical reporting patterns and model uncertainty, not risk to any individual or a recommendation for action."
+    )
+    st.caption(
+        "The specific classifier evaluates 13 offense categories. "
+        "Open **How Offenses Are Grouped** in the sidebar to view the complete list."
     )
 
     c1, c2 = st.columns(2)
